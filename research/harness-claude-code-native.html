@@ -476,7 +476,197 @@ claude agents</code></pre>
          └─ FAIL 존재 → generator에게 피드백 → 수정 후 재검증</code></pre>
   </div>
 
-  <h2>8. 모델별 하네스 단순화 전략</h2>
+  <h2>8. 루프(반복 실행) 구현</h2>
+  <p>Claude Code 네이티브에서 루프는 3가지 방식으로 구현한다.</p>
+
+  <h3>방식 A: Stop 훅 기반 자동 루프 (가장 강력)</h3>
+  <p>Claude가 응답을 완료할 때 <code>Stop</code> 훅이 실행되고, 검증 실패 시 <code>decision: "block"</code>으로 Claude를 재실행시킨다.</p>
+
+  <h4>동작 원리</h4>
+  <pre><code>Claude 응답 완료
+      │
+      ▼
+[Stop 훅 실행]
+  → loop-guard.sh 실행
+  → sprint_result.json 검사
+      │
+      ├─ FAIL + 횟수 &lt; MAX → decision: "block" → Claude 재실행
+      └─ PASS 또는 횟수 &gt;= MAX → exit 0 → 정상 종료</code></pre>
+
+  <h4><code>.claude/settings.json</code> 훅 설정</h4>
+  <pre><code>{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\".claude/hooks/loop-guard.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+  <h4><code>.claude/hooks/loop-guard.sh</code></h4>
+  <pre><code>#!/bin/bash
+INPUT=$(cat)
+LOOP_COUNT_FILE=".claude/loop_count.txt"
+MAX_LOOPS=15
+
+COUNT=$(cat "$LOOP_COUNT_FILE" 2>/dev/null || echo 0)
+
+# 최대 횟수 초과 시 강제 종료
+if [ "$COUNT" -ge "$MAX_LOOPS" ]; then
+  echo 0 > "$LOOP_COUNT_FILE"
+  exit 0
+fi
+
+# sprint_result.json 확인 (evaluator가 기록)
+if [ -f "sprint_result.json" ]; then
+  STATUS=$(jq -r '.status' sprint_result.json 2>/dev/null)
+
+  if [ "$STATUS" = "FAIL" ]; then
+    FAILS=$(jq -r '.failures | join(", ")' sprint_result.json)
+    NEW_COUNT=$((COUNT + 1))
+    echo "$NEW_COUNT" > "$LOOP_COUNT_FILE"
+
+    jq -n \
+      --arg reason "[$NEW_COUNT/$MAX_LOOPS] 검증 실패: $FAILS. generator 에이전트로 수정 후 evaluator로 재검증하세요." \
+      '{
+        "decision": "block",
+        "reason": $reason
+      }'
+    exit 0
+  fi
+fi
+
+# PASS → 정상 종료
+echo 0 > "$LOOP_COUNT_FILE"
+exit 0</code></pre>
+
+  <h4>evaluator가 기록하는 <code>sprint_result.json</code> 포맷</h4>
+  <p>evaluator 에이전트 시스템 프롬프트에 다음 지시 추가:</p>
+  <pre><code># PASS 시
+{ "status": "PASS", "passed": 27, "total": 27, "failures": [] }
+
+# FAIL 시
+{ "status": "FAIL", "passed": 25, "total": 27,
+  "failures": ["fillRectangle mouseUp 미트리거", "422 에러 발생"] }</code></pre>
+
+  <h3>방식 B: 코디네이터 에이전트 프롬프트 루프</h3>
+  <p>별도 코디네이터 에이전트가 generator → evaluator 루프를 자체적으로 반복 수행한다.</p>
+
+  <h4><code>.claude/agents/coordinator.md</code></h4>
+  <pre><code>---
+name: coordinator
+description: >
+  하네스 전체 루프를 자율 실행할 때 사용.
+  generator와 evaluator를 반복 호출해 스프린트를 완성한다.
+model: opus
+tools: Agent(generator, evaluator), Read, Write, Bash
+maxTurns: 50
+color: purple
+---
+
+당신은 하네스 코디네이터입니다. 다음 루프를 실행합니다:
+
+반복 횟수 = 0 / 최대 반복 = 15
+
+LOOP:
+  1. generator 에이전트 호출: "sprint_contract.md 기반으로 스프린트 구현"
+  2. evaluator 에이전트 호출: "sprint_contract.md 기준을 Playwright로 검증"
+  3. evaluator 결과 확인:
+     - 모두 PASS → 루프 종료
+     - FAIL + 횟수 < 최대 → 반복 횟수 += 1, LOOP 재실행
+     - FAIL + 횟수 >= 최대 → 사용자에게 수동 개입 요청</code></pre>
+
+  <h4>호출 방법</h4>
+  <pre><code># coordinator 에이전트가 알아서 루프 실행
+"coordinator 에이전트를 사용해서 스프린트 3을 완료할 때까지 반복 실행해줘"
+
+# 슬래시 커맨드
+/sprint auto 3</code></pre>
+
+  <h3>방식 C: 프론트엔드 디자인 반복 루프 (5~15회)</h3>
+  <p>원본 아티클의 프론트엔드 디자인 반복 루프. design-generator와 design-evaluator를 반복 호출해 미학 점수를 높인다.</p>
+
+  <h4><code>.claude/agents/design-loop.md</code></h4>
+  <pre><code>---
+name: design-loop
+description: >
+  프론트엔드 UI를 반복적으로 개선할 때 사용.
+  5~15회 반복해 미학 점수를 높인다.
+model: opus
+tools: Agent(design-generator, design-evaluator), Read, Write, Bash
+maxTurns: 60
+color: pink
+---
+
+반복 횟수 = 0 / 최소 = 5 / 최대 = 15 / 목표 점수 = 80
+
+LOOP:
+  1. design-generator 호출: 첫 번째는 새 방향, 이후는 피드백 반영
+  2. design-evaluator 호출: 4가지 기준 채점 (100점 만점)
+  3. 점수 확인:
+     - 반복 < 최소 → 무조건 계속
+     - 점수 >= 80 AND 반복 >= 최소 → 종료
+     - 반복 >= 최대 → 최고 점수 버전으로 되돌리고 종료
+     - direction = "pivot" → 완전히 새로운 미학으로 전환</code></pre>
+
+  <h4><code>.claude/agents/design-evaluator.md</code></h4>
+  <pre><code>---
+name: design-evaluator
+description: 프론트엔드 UI를 4가지 기준으로 평가하고 점수를 매길 때 사용
+model: sonnet
+tools: Bash, Read
+mcpServers:
+  - playwright:
+      type: stdio
+      command: npx
+      args: ["-y", "@playwright/mcp@latest"]
+permissionMode: plan
+color: yellow
+---
+
+Playwright로 스크린샷 후 4가지 기준 채점:
+
+| 기준 | 배점 |
+|------|------|
+| 설계 품질 | 35점 |
+| 독창성 | 35점 |
+| 제작 기술 | 15점 |
+| 기능성 | 15점 |
+
+출력 형식 (필수):
+{
+  "total_score": 78,
+  "direction": "refine",  // 또는 "pivot"
+  "feedback": "독창성 우수. 타이포 계층 개선 필요."
+}</code></pre>
+
+  <h3>방식별 비교</h3>
+  <table>
+    <thead><tr><th>방식</th><th>자동화 수준</th><th>루프 제어 위치</th><th>적합한 경우</th></tr></thead>
+    <tbody>
+      <tr><td>A. Stop 훅</td><td>완전 자동</td><td>셸 스크립트</td><td>스프린트 검증 반복</td></tr>
+      <tr><td>B. 코디네이터 에이전트</td><td>완전 자동</td><td>에이전트 프롬프트</td><td>복잡한 조건 분기</td></tr>
+      <tr><td>C. design-loop</td><td>완전 자동</td><td>에이전트 프롬프트</td><td>프론트엔드 미학 개선</td></tr>
+      <tr><td>수동 /sprint review</td><td>수동</td><td>사용자</td><td>한 번씩 검증</td></tr>
+    </tbody>
+  </table>
+
+  <h3>무한 루프 방지 체크리스트</h3>
+  <ul>
+    <li><code>maxTurns</code> 설정: 코디네이터 에이전트에 반드시 적용</li>
+    <li>Stop 훅 카운터: <code>loop_count.txt</code>로 횟수 추적</li>
+    <li><code>stop_hook_active</code> 확인: Stop 훅 내에서 재귀 방지</li>
+    <li>명시적 종료 조건: PASS 또는 최대 횟수 도달 시 <code>exit 0</code></li>
+  </ul>
+
+  <h2>9. 모델별 하네스 단순화 전략</h2>
   <table>
     <thead><tr><th>모델</th><th>권장 하네스 구성</th></tr></thead>
     <tbody class="model-row">
