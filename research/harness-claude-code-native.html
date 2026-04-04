@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code 네이티브 방식으로 하네스 구현하기</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg-card: #1a1d27;
+      --bg-code: #12141e;
+      --bg-table-header: #1e2130;
+      --border: #2a2d3e;
+      --accent: #7c6af7;
+      --accent2: #56c2e0;
+      --text: #d4d8f0;
+      --text-muted: #7a7f9a;
+      --green: #4ec994;
+      --orange: #f0a05a;
+      --yellow: #e5c07b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.6rem;
+    }
+    .meta {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #fff;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin: 1.5rem 0 0.6rem;
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--yellow);
+      margin: 1.2rem 0 0.5rem;
+    }
+
+    p { margin-bottom: 0.8rem; }
+    ul, ol { margin: 0.5rem 0 0.8rem 1.4rem; }
+    li { margin-bottom: 0.3rem; }
+    strong { color: #fff; font-weight: 600; }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 1rem 0;
+      padding: 0.7rem 1rem;
+      background: var(--bg-card);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 0.8rem 0 1.2rem;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      color: #a9b1d6;
+    }
+    pre code { color: #c0caf5; }
+    p code, li code, td code {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: var(--accent2);
+    }
+
+    /* File tree styling */
+    pre.tree code { color: #7a8fa6; }
+    pre.tree code .highlight { color: var(--accent2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.8rem 0 1.2rem;
+      font-size: 0.88rem;
+    }
+    thead tr { background: var(--bg-table-header); }
+    th {
+      padding: 0.6rem 0.9rem;
+      text-align: left;
+      color: #fff;
+      font-weight: 600;
+      border-bottom: 2px solid var(--accent);
+    }
+    td {
+      padding: 0.55rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:hover td { background: rgba(124, 106, 247, 0.04); }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Agent cards */
+    .agent-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+    .agent-card-header {
+      padding: 0.6rem 1rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .agent-card-header.blue  { background: rgba(86, 156, 214, 0.15); border-bottom: 1px solid rgba(86, 156, 214, 0.3); }
+    .agent-card-header.green { background: rgba(78, 201, 148, 0.15); border-bottom: 1px solid rgba(78, 201, 148, 0.3); }
+    .agent-card-header.orange{ background: rgba(240, 160, 90, 0.15); border-bottom: 1px solid rgba(240, 160, 90, 0.3); }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-blue   { background: #569cd6; }
+    .dot-green  { background: #4ec994; }
+    .dot-orange { background: #f0a05a; }
+    .agent-card pre { margin: 0; border: none; border-radius: 0; background: var(--bg-code); }
+
+    /* Flow diagram */
+    .flow {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin: 1rem 0;
+    }
+    .flow pre { margin: 0; border: none; background: transparent; padding: 0; }
+
+    /* Model table highlight */
+    .model-row td:first-child { color: var(--yellow); font-weight: 600; }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    footer h2 { margin-top: 0; }
+    footer ul { list-style: none; margin-left: 0; }
+    footer li { margin-bottom: 0.4rem; }
+    footer li::before { content: "→ "; color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Claude Code 네이티브 방식으로 하네스 구현하기</h1>
+    <div class="meta">Agent SDK 없이 현재 실행 중인 Claude Code 환경에서 하네스 설계 방법론을 구현하는 방법 · 조사일: 2026-04-04</div>
+  </header>
+
+  <h2>핵심 차이점</h2>
+  <table>
+    <thead><tr><th>방식</th><th>Agent SDK</th><th>Claude Code 네이티브</th></tr></thead>
+    <tbody>
+      <tr><td>에이전트 정의</td><td>코드(Python/TypeScript)</td><td>파일(<code>.claude/agents/*.md</code>)</td></tr>
+      <tr><td>스킬 정의</td><td>코드 또는 파일</td><td>파일(<code>.claude/skills/*/SKILL.md</code>)</td></tr>
+      <tr><td>훅 정의</td><td>코드 콜백 함수</td><td>셸 스크립트 + <code>settings.json</code></td></tr>
+      <tr><td>실행 방식</td><td><code>query()</code> 함수 호출</td><td>Claude Code CLI 대화 or <code>claude --agent</code></td></tr>
+      <tr><td>MCP 설정</td><td>코드 내 <code>mcpServers</code> 옵션</td><td><code>.mcp.json</code> 파일</td></tr>
+      <tr><td>상태 관리</td><td>세션 ID + 파일</td><td>파일 시스템 (동일)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>1. 프로젝트 디렉토리 구조</h2>
+  <pre><code>프로젝트 루트/
+├── .claude/
+│   ├── settings.json          ← 훅 설정 (자동화 동작)
+│   ├── agents/
+│   │   ├── planner.md         ← 기획자 에이전트
+│   │   ├── generator.md       ← 생성자 에이전트
+│   │   └── evaluator.md       ← 평가자 에이전트
+│   ├── skills/
+│   │   └── frontend-design/
+│   │       └── SKILL.md       ← 프론트엔드 디자인 스킬
+│   ├── hooks/
+│   │   ├── sprint-contract.sh ← 스프린트 계약 검증 훅
+│   │   └── progress-update.sh ← 진행 상황 기록 훅
+│   └── commands/
+│       ├── harness.md         ← /harness 슬래시 커맨드
+│       └── sprint.md          ← /sprint 슬래시 커맨드
+├── .mcp.json                  ← MCP 서버 설정 (Playwright 등)
+├── feature_list.json          ← 200+ 기능 목록 + 완료 여부
+├── claude-progress.txt        ← 세션 간 진행 상황 기록
+└── sprint_contract.md         ← 현재 스프린트 계약 (완료 기준)</code></pre>
+
+  <h2>2. 에이전트 정의 파일 (<code>.claude/agents/</code>)</h2>
+  <p>서브에이전트는 YAML 프론트매터 + 마크다운 시스템 프롬프트로 정의된다. Claude가 description을 보고 자동으로 위임할지 판단하거나, 명시적으로 호출할 수 있다.</p>
+
+  <div class="agent-card">
+    <div class="agent-card-header blue"><span class="dot dot-blue"></span>기획자 — <code>.claude/agents/planner.md</code></div>
+    <pre><code>---
+name: planner
+description: >
+  사용자의 짧은 아이디어(1~4문장)를 완전한 제품 스펙으로 확장할 때 사용.
+  feature_list.json과 스프린트 계획을 생성한다.
+model: opus
+tools: Read, Write, Bash
+color: blue
+---
+
+당신은 제품 기획자입니다. 사용자의 간략한 아이디어를 받아 다음을 생성합니다:
+
+1. feature_list.json: 200개 이상의 세부 기능 목록
+   - 각 기능: { "id", "category", "description", "steps": [], "completed": false }
+2. sprint_plan.md: 스프린트별 구현 계획 (10개 스프린트)
+
+## 원칙
+- 의도적으로 야심찬 범위를 설정한다
+- AI 통합 기능 기회를 적극 탐색한다
+- 각 스프린트는 독립적으로 검증 가능한 결과물을 포함한다</code></pre>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-card-header green"><span class="dot dot-green"></span>생성자 — <code>.claude/agents/generator.md</code></div>
+    <pre><code>---
+name: generator
+description: >
+  스프린트 계약에 따라 기능을 구현할 때 사용.
+  한 번에 하나의 스프린트를 구현하고, 완료 후 git 커밋한다.
+model: opus
+tools: Read, Write, Edit, Bash, Glob, Grep
+permissionMode: acceptEdits
+color: green
+---
+
+당신은 풀스택 개발자입니다. 스프린트 계약(sprint_contract.md)을 읽고 기능을 구현합니다.
+
+## 기술 스택
+- 프론트엔드: React + Vite
+- 백엔드: FastAPI + Python
+- 데이터베이스: SQLite (개발) / PostgreSQL (프로덕션)
+
+## 워크플로우
+1. sprint_contract.md 읽기 (완료 기준 확인)
+2. claude-progress.txt 읽기 (이전 세션 컨텍스트)
+3. feature_list.json에서 현재 스프린트 미완료 기능 파악
+4. init.sh로 개발 서버 시작
+5. 기능 구현 (한 번에 하나씩)
+6. 각 기능 완료 후 git 커밋
+7. claude-progress.txt 업데이트</code></pre>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-card-header orange"><span class="dot dot-orange"></span>평가자 — <code>.claude/agents/evaluator.md</code></div>
+    <pre><code>---
+name: evaluator
+description: >
+  스프린트 완료 후 기능을 검증할 때 사용.
+  Playwright로 실제 사용자 행동을 시뮬레이션하고 sprint_contract.md의 기준을 검증한다.
+model: sonnet
+tools: Bash, Read, Glob
+mcpServers:
+  - playwright:
+      type: stdio
+      command: npx
+      args: ["-y", "@playwright/mcp@latest"]
+permissionMode: plan
+color: orange
+---
+
+당신은 QA 엔지니어입니다. sprint_contract.md의 완료 기준을 하나씩 검증합니다.
+
+## 중요 원칙
+- 문제 발견 시 절대 정당화하지 않는다
+- 부분적 동작은 실패로 마킹한다
+- 각 기준 항목에 대해 "PASS" 또는 "FAIL: [구체적 이유]"로 명확히 판정한다
+
+## 보고 형식
+스프린트 N 검증 결과
+=====================
+[ PASS ] 기준 1: 직사각형 채우기 도구 작동
+[ FAIL ] 기준 2: fillRectangle이 mouseUp에 트리거되지 않음
+총계: 25/27 통과</code></pre>
+  </div>
+
+  <h2>3. MCP 서버 설정 (<code>.mcp.json</code>)</h2>
+  <pre><code>{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    }
+  }
+}</code></pre>
+
+  <h2>4. 훅 설정 (<code>.claude/settings.json</code>)</h2>
+
+  <h3>4.1 진행 상황 자동 기록 훅</h3>
+  <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\".claude/hooks/progress-update.sh\"",
+            "statusMessage": "진행 상황 기록 중..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\".claude/hooks/session-end.sh\"",
+            "statusMessage": "세션 종료 처리 중..."
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+  <h3>4.2 진행 상황 기록 스크립트 (<code>.claude/hooks/progress-update.sh</code>)</h3>
+  <pre><code>#!/bin/bash
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+# git 커밋 감지 시 claude-progress.txt 업데이트
+if echo "$COMMAND" | grep -q 'git commit'; then
+  TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+  COMMIT_MSG=$(echo "$COMMAND" | grep -o '"[^"]*"' | head -1)
+  echo "[$TIMESTAMP] 커밋: $COMMIT_MSG" >> claude-progress.txt
+fi
+
+exit 0</code></pre>
+
+  <h3>4.3 세션 종료 훅 (<code>.claude/hooks/session-end.sh</code>)</h3>
+  <pre><code>#!/bin/bash
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+echo "[$TIMESTAMP] 세션 종료" >> claude-progress.txt
+
+if [ -f "feature_list.json" ]; then
+  TOTAL=$(jq '[.[]] | length' feature_list.json 2>/dev/null || echo "?")
+  DONE=$(jq '[.[] | select(.completed == true)] | length' feature_list.json 2>/dev/null || echo "?")
+  echo "  진행: $DONE/$TOTAL 기능 완료" >> claude-progress.txt
+fi
+
+exit 0</code></pre>
+
+  <h2>5. 슬래시 커맨드 (<code>.claude/commands/</code>)</h2>
+
+  <h3><code>/harness</code> 커맨드</h3>
+  <pre><code>하네스를 시작합니다. 다음 절차로 진행하세요:
+
+1. **planner 에이전트**를 사용해서 "$ARGUMENTS"를 완전한 제품 스펙으로 확장하고
+   feature_list.json과 sprint_plan.md를 생성하세요.
+
+2. 기획 완료 후 다음 단계 안내:
+   - `/sprint 1` - 스프린트 1 시작
+   - `/sprint review` - 현재 스프린트 평가</code></pre>
+
+  <h3><code>/sprint</code> 커맨드</h3>
+  <pre><code>스프린트를 관리합니다. $ARGUMENTS에 따라:
+
+- **숫자** (예: `1`, `3`): generator 에이전트를 사용해서 해당 스프린트 구현
+- **review**: evaluator 에이전트를 사용해서 현재 스프린트 검증
+- **status**: feature_list.json 읽어서 전체 진행 상황 리포트</code></pre>
+
+  <h2>6. 에이전트 호출 방법</h2>
+
+  <h3>방법 1: 대화에서 직접 호출</h3>
+  <pre><code># 명시적 호출
+"planner 에이전트를 사용해서 '2D 레트로 게임 메이커'를 제품 스펙으로 확장해줘"
+
+# 슬래시 커맨드
+/harness 2D 레트로 게임 메이커
+/sprint 3
+/sprint review</code></pre>
+
+  <h3>방법 2: Claude Code CLI 플래그</h3>
+  <pre><code># 단일 에이전트로 실행
+claude --agent generator
+
+# 에이전트 정의를 JSON으로 직접 전달 (세션 한정)
+claude --agents '{
+  "generator": {
+    "description": "기능 구현 전담",
+    "prompt": "스프린트 계약 기반으로 구현한다.",
+    "tools": ["Read", "Write", "Edit", "Bash"]
+  },
+  "evaluator": {
+    "description": "Playwright QA 검증",
+    "prompt": "스프린트 계약 기준을 엄격히 검증한다.",
+    "tools": ["Bash", "Read"]
+  }
+}'
+
+# 에이전트 목록 확인
+claude agents</code></pre>
+
+  <h3>방법 3: <code>/agents</code> 명령으로 인터랙티브 생성</h3>
+  <pre><code>/agents           → 에이전트 관리 UI 진입
+→ Create new agent
+→ Project (현재 프로젝트 한정) 또는 Personal (모든 프로젝트)
+→ Generate with Claude (자동 생성) 또는 직접 작성</code></pre>
+
+  <h2>7. 전체 하네스 실행 흐름</h2>
+  <div class="flow">
+    <pre><code>사용자: /harness 2D 레트로 게임 메이커
+         │
+         ▼
+[planner 에이전트 자동 호출]
+  → feature_list.json 생성 (200+ 기능)
+  → sprint_plan.md 생성 (10개 스프린트)
+         │
+사용자: /sprint 1
+         │
+         ▼
+[generator 에이전트]
+  → sprint_contract.md 작성 (27개 완료 기준)
+  → 기능 구현 시작 (한 번에 하나씩)
+  → 각 기능 완료 후 git commit
+  → claude-progress.txt 업데이트
+         │
+사용자: /sprint review
+         │
+         ▼
+[evaluator 에이전트 + Playwright MCP]
+  → sprint_contract.md 기준 항목 순차 검증
+  → UI 클릭 테스트 / API 검증 / DB 상태 확인
+  → PASS/FAIL 리포트 출력
+         │
+         ├─ 모두 PASS → /sprint 2 진행
+         └─ FAIL 존재 → generator에게 피드백 → 수정 후 재검증</code></pre>
+  </div>
+
+  <h2>8. 모델별 하네스 단순화 전략</h2>
+  <table>
+    <thead><tr><th>모델</th><th>권장 하네스 구성</th></tr></thead>
+    <tbody class="model-row">
+      <tr><td>Sonnet 4.5</td><td>스프린트 계약 + 반복 evaluator 필수 (컨텍스트 불안감)</td></tr>
+      <tr><td>Opus 4.5</td><td>스프린트 구조 유지, evaluator 간소화 가능</td></tr>
+      <tr><td>Opus 4.6</td><td>스프린트 제거 가능, evaluator를 단일 최종 패스로 변경</td></tr>
+    </tbody>
+  </table>
+  <blockquote>각 하네스 구성 요소는 "모델이 독립적으로 할 수 없다"는 가정을 인코딩한다. 모델 업데이트마다 불필요한 스캐폴딩을 제거하고 새로운 기능을 추가한다.</blockquote>
+
+  <footer>
+    <h2>참고 링크</h2>
+    <ul>
+      <li><a href="https://code.claude.com/docs/en/sub-agents" target="_blank">Claude Code 서브에이전트</a></li>
+      <li><a href="https://code.claude.com/docs/en/hooks" target="_blank">Claude Code 훅</a></li>
+      <li><a href="https://code.claude.com/docs/en/skills" target="_blank">Claude Code 스킬</a></li>
+      <li><a href="https://platform.claude.com/docs/en/agent-sdk/subagents" target="_blank">Agent SDK 서브에이전트</a></li>
+      <li><a href="https://platform.claude.com/docs/en/agent-sdk/hooks" target="_blank">Agent SDK 훅</a></li>
+      <li><a href="https://www.anthropic.com/engineering/harness-design-long-running-apps" target="_blank">원본 하네스 아티클</a></li>
+    </ul>
+  </footer>
+
+</div>
+</body>
+</html>
