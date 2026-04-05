@@ -1,0 +1,6 @@
+# generator 에이전트가 스프린트 1 구현 시 이 디렉토리에 다음 파일을 생성합니다:
+# - App.tsx
+# - components/AddTodoForm.tsx
+# - components/TodoList.tsx
+# - components/TodoItem.tsx
+# - api/todos.ts

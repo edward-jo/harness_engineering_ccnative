@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\".claude/hooks/progress-update.sh\"",
+            "statusMessage": "진행 상황 기록 중..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\".claude/hooks/loop-guard.sh\"",
+            "timeout": 30,
+            "statusMessage": "검증 결과 확인 중..."
+          },
+          {
+            "type": "command",
+            "command": "\".claude/hooks/session-end.sh\"",
+            "statusMessage": "세션 종료 처리 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

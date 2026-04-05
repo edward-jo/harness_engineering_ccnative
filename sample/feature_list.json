@@ -1,0 +1,197 @@
+[
+  {
+    "id": "feat-001",
+    "sprint": 1,
+    "category": "backend-core",
+    "title": "할일 추가 API",
+    "description": "POST /api/todos로 새 할일 생성",
+    "steps": [
+      "FastAPI 라우터에 POST /api/todos 구현",
+      "title 빈 문자열 유효성 검사",
+      "SQLite에 저장 후 생성된 항목 반환"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-002",
+    "sprint": 1,
+    "category": "backend-core",
+    "title": "할일 목록 조회 API",
+    "description": "GET /api/todos로 전체 할일 목록 반환",
+    "steps": [
+      "GET /api/todos 엔드포인트 구현",
+      "최신순 정렬 (created_at DESC)",
+      "Pydantic 스키마로 응답 직렬화"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-003",
+    "sprint": 1,
+    "category": "backend-core",
+    "title": "할일 완료 토글 API",
+    "description": "PATCH /api/todos/{id}/toggle로 완료 상태 전환",
+    "steps": [
+      "PATCH /api/todos/{id}/toggle 구현",
+      "존재하지 않는 ID 요청 시 404 반환",
+      "completed 필드 반전 후 저장"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-004",
+    "sprint": 1,
+    "category": "backend-core",
+    "title": "할일 삭제 API",
+    "description": "DELETE /api/todos/{id}로 항목 삭제",
+    "steps": [
+      "DELETE /api/todos/{id} 구현",
+      "존재하지 않는 ID 요청 시 404 반환",
+      "삭제 성공 시 204 No Content 반환"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-005",
+    "sprint": 1,
+    "category": "frontend-core",
+    "title": "할일 추가 폼",
+    "description": "텍스트 입력 + 추가 버튼 UI",
+    "steps": [
+      "AddTodoForm 컴포넌트 구현",
+      "Enter 키 또는 버튼 클릭으로 제출",
+      "제출 후 입력 필드 초기화"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-006",
+    "sprint": 1,
+    "category": "frontend-core",
+    "title": "할일 목록 렌더링",
+    "description": "TodoList 컴포넌트로 전체 목록 표시",
+    "steps": [
+      "TodoList, TodoItem 컴포넌트 구현",
+      "API에서 목록 fetch 후 표시",
+      "빈 목록일 때 안내 메시지 표시"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-007",
+    "sprint": 1,
+    "category": "frontend-core",
+    "title": "완료 체크박스",
+    "description": "체크박스 클릭으로 완료 상태 토글",
+    "steps": [
+      "TodoItem에 체크박스 추가",
+      "클릭 시 PATCH API 호출",
+      "완료 항목 텍스트에 취소선 표시"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-008",
+    "sprint": 1,
+    "category": "frontend-core",
+    "title": "할일 삭제 버튼",
+    "description": "각 항목에 삭제 버튼 추가",
+    "steps": [
+      "TodoItem에 삭제 버튼 추가",
+      "클릭 시 DELETE API 호출",
+      "삭제 후 목록에서 즉시 제거"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-009",
+    "sprint": 2,
+    "category": "filter",
+    "title": "필터 탭 (전체/진행중/완료)",
+    "description": "상태별 필터링 탭 UI",
+    "steps": [
+      "FilterTab 컴포넌트 구현",
+      "전체/진행중/완료 탭 전환",
+      "GET /api/todos?status=active 쿼리 파라미터 지원"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-010",
+    "sprint": 2,
+    "category": "filter",
+    "title": "할일 수정",
+    "description": "항목 클릭으로 인라인 편집",
+    "steps": [
+      "PATCH /api/todos/{id} 구현 (title 업데이트)",
+      "TodoItem 클릭 시 편집 모드 전환",
+      "Enter/Blur 시 저장, Escape 시 취소"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-011",
+    "sprint": 2,
+    "category": "filter",
+    "title": "완료 항목 일괄 삭제",
+    "description": "완료된 항목 모두 삭제 버튼",
+    "steps": [
+      "DELETE /api/todos/completed 엔드포인트 구현",
+      "완료 항목이 있을 때만 버튼 활성화",
+      "삭제 후 목록 즉시 갱신"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-012",
+    "sprint": 2,
+    "category": "ux",
+    "title": "드래그 앤 드롭 순서 변경",
+    "description": "할일 항목을 드래그로 순서 변경",
+    "steps": [
+      "react-dnd 또는 @dnd-kit/core 적용",
+      "PATCH /api/todos/reorder 엔드포인트 구현",
+      "드롭 후 서버에 새 순서 저장"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-013",
+    "sprint": 3,
+    "category": "ai",
+    "title": "AI 자동 카테고리 분류",
+    "description": "Claude API로 할일 제목 분석 후 카테고리 자동 지정",
+    "steps": [
+      "Claude API 연동 (claude-haiku-4-5 사용)",
+      "POST /api/todos 시 카테고리 자동 분류",
+      "분류 결과를 UI에 뱃지로 표시"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-014",
+    "sprint": 3,
+    "category": "ai",
+    "title": "AI 우선순위 추천",
+    "description": "Claude API로 마감일/내용 분석 후 우선순위 제안",
+    "steps": [
+      "우선순위 필드 추가 (high/medium/low)",
+      "AI 분석 후 우선순위 추천 표시",
+      "사용자가 수동으로 변경 가능"
+    ],
+    "completed": false
+  },
+  {
+    "id": "feat-015",
+    "sprint": 3,
+    "category": "ai",
+    "title": "자연어 날짜 파싱",
+    "description": "\"내일까지\", \"다음 주 금요일\" 같은 자연어를 날짜로 변환",
+    "steps": [
+      "Claude API로 자연어 → ISO 날짜 변환",
+      "마감일 필드에 자연어 입력 지원",
+      "파싱 결과 미리보기 표시"
+    ],
+    "completed": false
+  }
+]

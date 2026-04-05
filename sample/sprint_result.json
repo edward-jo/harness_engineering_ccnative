@@ -1,0 +1,8 @@
+{
+  "status": "PENDING",
+  "sprint": 1,
+  "passed": 0,
+  "total": 12,
+  "failures": [],
+  "note": "스프린트 1 구현 전 초기 상태. evaluator 실행 후 업데이트됩니다."
+}
