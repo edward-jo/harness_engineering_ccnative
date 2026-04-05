@@ -39,35 +39,35 @@
     "name": "할일 추가 폼 UI",
     "description": "React 컴포넌트로 텍스트 입력과 추가 버튼을 구현한다",
     "sprint": 2,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-007",
     "name": "할일 목록 렌더링",
     "description": "TodoList 컴포넌트로 API에서 받아온 할일 목록을 표시한다",
     "sprint": 2,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-008",
     "name": "완료 체크박스 UI",
     "description": "체크박스 클릭으로 완료 상태를 토글하고 취소선을 표시한다",
     "sprint": 2,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-009",
     "name": "할일 삭제 버튼 UI",
     "description": "각 할일 항목에 삭제 버튼을 추가하고 클릭 시 즉시 제거한다",
     "sprint": 2,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-010",
     "name": "반응형 레이아웃",
     "description": "모바일과 데스크톱에서 모두 사용 가능한 반응형 CSS를 적용한다",
     "sprint": 2,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-011",

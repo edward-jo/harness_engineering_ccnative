@@ -64,3 +64,34 @@
 [2026-04-05 22:56:58] 세션 종료
   진행: ?/? 기능 완료
   최근 스프린트: ? (?)
+
+[2026-04-05 22:57:12] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 스프린트 2 구현] 프론트엔드 기본 UI 완료
+  구현 파일:
+    - app/frontend/package.json            (React 18, Vite, TS, TanStack Query, Axios, Tailwind 의존성 선언)
+    - app/frontend/vite.config.ts          (/api → localhost:8000 프록시)
+    - app/frontend/tsconfig.json           (strict mode)
+    - app/frontend/tsconfig.node.json
+    - app/frontend/tailwind.config.js
+    - app/frontend/postcss.config.js
+    - app/frontend/index.html
+    - app/frontend/.gitignore
+    - app/frontend/src/main.tsx            (QueryClientProvider 초기화)
+    - app/frontend/src/App.tsx             (반응형 컨테이너 레이아웃)
+    - app/frontend/src/index.css           (Tailwind 레이어)
+    - app/frontend/src/vite-env.d.ts
+    - app/frontend/src/api/todos.ts        (getTodos/createTodo/toggleTodo/deleteTodo)
+    - app/frontend/src/components/TodoForm.tsx  (입력 폼, Enter/버튼 제출)
+    - app/frontend/src/components/TodoList.tsx  (목록 + 빈 상태 안내)
+    - app/frontend/src/components/TodoItem.tsx  (체크박스 + 삭제 버튼)
+  주요 특징:
+    - API URL은 Vite 프록시(`/api`)로 처리 (환경변수 미사용)
+    - React Query의 invalidateQueries로 변경 후 자동 리페치
+    - Tailwind 반응형 유틸(sm: 등)로 모바일/데스크톱 대응
+    - 빈 목록일 때 "할 일이 없습니다" 안내 문구 노출
+    - 완료 항목은 line-through + text-gray-400으로 시각화
+  완료 기능: feat-006 ~ feat-010 (10/22)
+  다음 스프린트: 3 (고급 편집 기능) — feat-011 ~ feat-014

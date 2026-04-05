@@ -1,0 +1,4 @@
+/* Tailwind CSS 진입 — 전역 스타일 레이어를 주입한다 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
