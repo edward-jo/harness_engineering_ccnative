@@ -6,6 +6,8 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteTodo, toggleTodo, updateTodo, Todo } from '../api/todos';
+import CategoryBadge from './CategoryBadge';
+import PriorityBadge from './PriorityBadge';
 
 interface TodoItemProps {
   todo: Todo;
@@ -170,8 +172,28 @@ export default function TodoItem({ todo }: TodoItemProps) {
         </button>
       </div>
 
-      {/* 마감일 표시/편집 영역 */}
-      {isEditing ? (
+      {/* 카테고리/우선순위 뱃지 + 마감일 표시 영역 */}
+      {!isEditing && (
+        <div className="flex flex-wrap items-center gap-2 pl-8">
+          <CategoryBadge category={todo.category} />
+          <PriorityBadge priority={todo.priority} />
+          {todo.due_date && (
+            <span
+              data-testid="due-date"
+              className={`text-xs sm:text-sm ${
+                overdue && !todo.completed
+                  ? 'font-medium text-red-600'
+                  : 'text-gray-500'
+              }`}
+            >
+              마감일: {todo.due_date}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* 마감일 편집 영역 (편집 모드) */}
+      {isEditing && (
         <div className="flex items-center gap-2 pl-8">
           <label className="text-xs text-gray-500 sm:text-sm" htmlFor={`due-${todo.id}`}>
             마감일:
@@ -194,21 +216,6 @@ export default function TodoItem({ todo }: TodoItemProps) {
             </button>
           )}
         </div>
-      ) : (
-        todo.due_date && (
-          <div className="pl-8">
-            <span
-              data-testid="due-date"
-              className={`text-xs sm:text-sm ${
-                overdue && !todo.completed
-                  ? 'font-medium text-red-600'
-                  : 'text-gray-500'
-              }`}
-            >
-              마감일: {todo.due_date}
-            </span>
-          </div>
-        )
       )}
     </li>
   );

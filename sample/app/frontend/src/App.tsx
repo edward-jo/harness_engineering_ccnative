@@ -2,16 +2,22 @@
 // - 반응형 컨테이너 레이아웃을 정의한다 (모바일 375px, 데스크톱 1280px 대응)
 // - URL 쿼리 파라미터(?status=...)와 동기화된 필터 상태를 관리한다
 // - 완료 항목 존재 시 ClearCompleted 버튼을 노출한다
+// - 우선순위 정렬 토글(SortControls)을 제공한다
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import TodoForm from './components/TodoForm';
 import TodoList from './components/TodoList';
 import FilterTabs from './components/FilterTabs';
 import ClearCompleted from './components/ClearCompleted';
+import SortControls from './components/SortControls';
 import { useStatusFilter } from './hooks/useStatusFilter';
 import { getTodos } from './api/todos';
 
 export default function App() {
   const { status, setStatus } = useStatusFilter();
+
+  // 우선순위 정렬 토글 상태 (기본 false → 서버 순서 유지)
+  const [sortByPriority, setSortByPriority] = useState(false);
 
   // 완료 항목 개수 조회 — "완료 삭제" 버튼 노출 여부 판단용
   // (별도 쿼리 키로 캐시하여 필터 전환과 무관하게 유지)
@@ -41,13 +47,19 @@ export default function App() {
           <div className="sm:flex-1">
             <FilterTabs value={status} onChange={setStatus} />
           </div>
-          {completedCount > 0 && (
-            <ClearCompleted count={completedCount} />
-          )}
+          <div className="flex items-center gap-2">
+            <SortControls
+              sortByPriority={sortByPriority}
+              onToggle={setSortByPriority}
+            />
+            {completedCount > 0 && (
+              <ClearCompleted count={completedCount} />
+            )}
+          </div>
         </section>
 
         <section>
-          <TodoList status={status} />
+          <TodoList status={status} sortByPriority={sortByPriority} />
         </section>
       </div>
     </div>

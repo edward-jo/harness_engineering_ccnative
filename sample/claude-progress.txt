@@ -120,3 +120,35 @@
     - 완료 항목은 line-through + text-gray-400으로 시각화
   완료 기능: feat-006 ~ feat-010 (10/22)
   다음 스프린트: 3 (고급 편집 기능) — feat-011 ~ feat-014
+
+[2026-04-05 23:30:40] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 스프린트 4 구현] AI 통합 완료
+  구현/수정 파일:
+    백엔드:
+      - app/backend/models.py          (Todo에 category(기본값 "기타"), priority(기본값 "medium") 컬럼 추가)
+      - app/backend/schemas.py         (TodoCreate/TodoUpdate/TodoResponse에 category/priority 필드 추가)
+      - app/backend/ai.py              (신규, Claude API classify_todo/recommend_priority + 안전 폴백)
+      - app/backend/routers/todos.py   (POST 시 AI 분류/추천 자동 호출, PUT에 category/priority 수정 지원)
+      - app/backend/main.py            (python-dotenv 로드, category/priority 컬럼 자동 ALTER TABLE 마이그레이션)
+      - app/backend/requirements.txt   (anthropic==0.39.0 추가)
+      - app/backend/.env.example       (신규, ANTHROPIC_API_KEY 템플릿)
+    프론트엔드:
+      - app/frontend/src/api/todos.ts              (Todo 타입에 category/priority, Priority/Category 타입 추가)
+      - app/frontend/src/components/CategoryBadge.tsx (신규, 8가지 카테고리 색상 뱃지)
+      - app/frontend/src/components/PriorityBadge.tsx (신규, 3가지 우선순위 뱃지)
+      - app/frontend/src/components/SortControls.tsx  (신규, 우선순위 정렬 토글 버튼)
+      - app/frontend/src/components/TodoItem.tsx      (CategoryBadge, PriorityBadge 표시 추가)
+      - app/frontend/src/components/TodoList.tsx      (sortByPriority prop + high>medium>low 정렬)
+      - app/frontend/src/App.tsx                      (SortControls 통합, sortByPriority 상태 관리)
+  폴백 동작 검증:
+    - ANTHROPIC_API_KEY 미설정 시 classify_todo→"기타", recommend_priority→"medium" 정상 반환
+    - anthropic 패키지 미설치·API 호출 실패 등 모든 예외를 폴백으로 처리
+  API 검증 완료 (localhost:8000):
+    - POST /api/todos 응답에 category="기타", priority="medium" 포함
+    - POST에 category/priority 명시적 전달 시 해당 값 유지
+    - PUT /api/todos/{id}로 category/priority 수정 정상 동작
+  완료 기능: feat-015 ~ feat-018 (18/22)
+  다음 스프린트: 5 (대시보드·브리핑·에러 처리·배포) — feat-019 ~ feat-022

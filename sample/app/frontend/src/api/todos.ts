@@ -5,6 +5,20 @@ import axios from 'axios';
 /** 필터 상태 타입 (URL 쿼리 파라미터와 1:1 매핑) */
 export type TodoStatus = 'all' | 'active' | 'completed';
 
+/** 우선순위 타입 (AI 추천 또는 수동 설정) */
+export type Priority = 'high' | 'medium' | 'low';
+
+/** 카테고리 타입 (AI 분류) */
+export type Category =
+  | '업무'
+  | '개인'
+  | '쇼핑'
+  | '건강'
+  | '학습'
+  | '여가'
+  | '가사'
+  | '기타';
+
 /** 서버가 반환하는 할일 항목 타입 */
 export interface Todo {
   id: number;
@@ -12,12 +26,16 @@ export interface Todo {
   completed: boolean;
   created_at: string; // ISO 8601 형식
   due_date: string | null; // YYYY-MM-DD (ISO 8601 date) 또는 null
+  category: string; // AI가 분류한 카테고리 (8종 중 하나, 확장 대비 string)
+  priority: Priority; // AI가 추천한 우선순위
 }
 
 /** 수정 요청 본문 타입 (필드는 선택적) */
 export interface TodoUpdatePayload {
   title?: string;
   due_date?: string | null;
+  category?: string;
+  priority?: Priority;
 }
 
 // 공통 Axios 인스턴스 — 모든 요청은 /api 프리픽스를 사용한다

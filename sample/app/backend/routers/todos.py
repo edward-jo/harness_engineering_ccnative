@@ -7,6 +7,7 @@ from fastapi import status as http_status
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from ..ai import classify_todo, recommend_priority
 from ..database import get_db
 from ..models import Todo
 from ..schemas import TodoCreate, TodoResponse, TodoUpdate
@@ -25,11 +26,25 @@ def create_todo(payload: TodoCreate, db: Session = Depends(get_db)) -> Todo:
 
     빈 제목(`title=""`)은 Pydantic 검증에서 422로 거부된다.
     `due_date`는 선택 필드이며 생략 시 NULL로 저장된다.
+
+    `category`/`priority`가 요청에 포함되지 않으면 Claude API로 자동 분류/추천한다.
+    API 호출 실패 시 각각 "기타", "medium"으로 폴백한다.
     """
+    # AI 분류/추천 (요청에 값이 없을 때만)
+    category = payload.category
+    if category is None:
+        category = classify_todo(payload.title)
+
+    priority = payload.priority
+    if priority is None:
+        priority = recommend_priority(payload.title, payload.due_date)
+
     todo = Todo(
         title=payload.title,
         completed=False,
         due_date=payload.due_date,
+        category=category,
+        priority=priority,
     )
     db.add(todo)
     db.commit()
@@ -114,6 +129,10 @@ def update_todo(
     if "due_date" in updates:
         # due_date는 None(명시적 제거)도 허용
         todo.due_date = updates["due_date"]
+    if "category" in updates and updates["category"] is not None:
+        todo.category = updates["category"]
+    if "priority" in updates and updates["priority"] is not None:
+        todo.priority = updates["priority"]
 
     db.commit()
     db.refresh(todo)
