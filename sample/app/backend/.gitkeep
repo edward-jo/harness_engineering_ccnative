@@ -1,6 +1,0 @@
-# generator 에이전트가 스프린트 1 구현 시 이 디렉토리에 다음 파일을 생성합니다:
-# - main.py       (FastAPI 앱 진입점)
-# - models.py     (SQLAlchemy ORM 모델)
-# - schemas.py    (Pydantic 요청/응답 스키마)
-# - database.py   (DB 연결 설정)
-# - requirements.txt

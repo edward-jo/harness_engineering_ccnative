@@ -1,7 +1,7 @@
 [2026-04-05 초기화] 하네스 설정 완료 - AI Todo Manager 프로젝트 시작
   대상 앱: AI Todo Manager (React + FastAPI)
-  총 기능 수: 15개 (스프린트 3개)
-  현재 스프린트: 1 (핵심 CRUD)
+  총 기능 수: 22개 (스프린트 5개)
+  현재 스프린트: 1 (백엔드 CRUD API)
 
 # 이 파일은 세션 간 컨텍스트 이월을 위한 진행 상황 로그입니다.
 # session-end.sh 훅이 자동으로 업데이트합니다.
@@ -14,3 +14,21 @@
 [2026-04-05 22:30:19] 세션 종료
   진행: ?/? 기능 완료
   최근 스프린트: ? (?)
+
+[2026-04-05 스프린트 1 구현] 백엔드 CRUD API 완료
+  구현 파일:
+    - app/backend/main.py         (FastAPI 진입점, CORS, 테이블 자동 생성)
+    - app/backend/database.py     (SQLAlchemy 엔진/세션, get_db 의존성)
+    - app/backend/models.py       (Todo ORM: id, title, completed, created_at)
+    - app/backend/schemas.py      (TodoCreate, TodoResponse Pydantic 스키마)
+    - app/backend/routers/todos.py (CRUD 4개 엔드포인트)
+    - app/backend/requirements.txt
+    - app/backend/.gitignore
+    - app/init.sh (uvicorn app.backend.main:app 실행으로 업데이트)
+  엔드포인트:
+    - POST   /api/todos            → 201, 할일 생성 (빈 title 422 거부)
+    - GET    /api/todos            → 200, 최신순 목록
+    - PATCH  /api/todos/{id}/toggle → 200, 완료 상태 반전 (없으면 404)
+    - DELETE /api/todos/{id}       → 204, 삭제 (없으면 404)
+  완료 기능: feat-001, feat-002, feat-003, feat-004, feat-005 (5/22)
+  다음 스프린트: 2 (프론트엔드 기본 UI) — feat-006 ~ feat-010

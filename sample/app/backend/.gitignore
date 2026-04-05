@@ -1,0 +1,13 @@
+# Python 가상 환경 및 캐시
+.venv/
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+
+# SQLite 데이터베이스 파일
+todos.db
+todos.db-journal
+
+# 환경 변수
+.env
