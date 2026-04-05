@@ -1,19 +1,27 @@
 """SQLAlchemy 데이터베이스 연결 및 세션 관리 모듈."""
 
+import os
 from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-# SQLite 데이터베이스 파일 경로 (app/backend/todos.db)
+# SQLite 기본 경로 (app/backend/todos.db)
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE_URL = f"sqlite:///{BASE_DIR / 'todos.db'}"
+DEFAULT_SQLITE_URL = f"sqlite:///{BASE_DIR / 'todos.db'}"
 
-# SQLAlchemy 엔진 생성
-# check_same_thread=False: FastAPI가 여러 스레드에서 같은 커넥션을 공유할 수 있도록 허용
+# 환경변수 DATABASE_URL이 있으면 그 값을 사용한다 (배포 시 PostgreSQL 등 주입 가능).
+DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
+
+# SQLite 접속에만 필요한 옵션을 조건부로 적용한다.
+_connect_args: dict = {}
+if DATABASE_URL.startswith("sqlite"):
+    # check_same_thread=False: FastAPI가 여러 스레드에서 같은 커넥션을 공유할 수 있도록 허용
+    _connect_args = {"check_same_thread": False}
+
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    connect_args=_connect_args,
 )
 
 # 세션 팩토리

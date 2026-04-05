@@ -152,3 +152,33 @@
     - PUT /api/todos/{id}로 category/priority 수정 정상 동작
   완료 기능: feat-015 ~ feat-018 (18/22)
   다음 스프린트: 5 (대시보드·브리핑·에러 처리·배포) — feat-019 ~ feat-022
+
+[2026-04-05 스프린트 5 구현] 대시보드 및 배포 준비 완료
+  구현/수정 파일:
+    백엔드:
+      - app/backend/ai.py                    (generate_briefing 함수 + FALLBACK_BRIEFING 추가)
+      - app/backend/routers/stats.py         (신규, GET /api/stats + POST /api/briefing)
+      - app/backend/main.py                  (stats 라우터 등록)
+      - app/backend/database.py              (DATABASE_URL 환경변수 지원, PostgreSQL 대비)
+      - app/backend/.env.example             (DATABASE_URL 항목 추가)
+    프론트엔드:
+      - app/frontend/src/api/todos.ts        (getStats/getBriefing + CategoryStats 타입 추가)
+      - app/frontend/src/hooks/useToast.ts   (신규, show/hide + 자동 숨김 타이머)
+      - app/frontend/src/components/Toast.tsx         (신규, success/error 색상 구분)
+      - app/frontend/src/components/StatsPanel.tsx    (신규, Tailwind 바 차트로 카테고리별 통계)
+      - app/frontend/src/components/DailyBriefing.tsx (신규, 브리핑 생성 버튼 + 결과 표시)
+      - app/frontend/src/main.tsx            (QueryCache/MutationCache 글로벌 에러 → CustomEvent)
+      - app/frontend/src/App.tsx             (StatsPanel/DailyBriefing/Toast 통합, app:toast 이벤트 구독)
+      - app/frontend/.env.example            (신규, VITE_API_URL 템플릿)
+  엔드포인트 추가:
+    - GET  /api/stats    → 200, {"<카테고리>": {"total": n, "completed": n}, ...}
+    - POST /api/briefing → 200, {"briefing": "<3~5문장>"} (API 실패 시 고정 폴백 문구)
+  API 검증 완료 (localhost:8000):
+    - GET /api/stats 카테고리별 total/completed 정상 반환
+    - POST /api/briefing 3~5문장 폴백 문구 정상 반환 (ANTHROPIC_API_KEY 미설정 환경)
+  프론트엔드 검증:
+    - npx tsc --noEmit 통과 (strict mode)
+    - npx vite build 성공 (142 modules transformed)
+    - 네트워크 에러 시 전역 토스트(빨간색) 자동 노출 (app:toast 이벤트 기반)
+  완료 기능: feat-019 ~ feat-022 (22/22)
+  다음 스프린트: 없음 (모든 기능 구현 완료)

@@ -15,7 +15,7 @@ except ImportError:
     pass
 
 from .database import Base, engine  # noqa: E402 (load_dotenv 이후 import)
-from .routers import todos  # noqa: E402
+from .routers import stats, todos  # noqa: E402
 
 # 앱 시작 시 테이블 자동 생성 (todos.db 파일 생성)
 Base.metadata.create_all(bind=engine)
@@ -74,6 +74,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(todos.router)
+app.include_router(stats.router)
 
 
 @app.get("/", tags=["health"])

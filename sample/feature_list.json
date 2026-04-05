@@ -130,27 +130,27 @@
     "name": "카테고리별 통계 대시보드",
     "description": "카테고리별 할일 개수와 완료율을 시각화한 대시보드를 제공한다",
     "sprint": 5,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-020",
     "name": "AI 일일 브리핑",
     "description": "Claude API로 오늘의 우선 할일을 요약한 일일 브리핑을 생성한다",
     "sprint": 5,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-021",
     "name": "에러 처리 및 토스트 알림",
     "description": "API 실패와 성공을 토스트 알림으로 사용자에게 피드백한다",
     "sprint": 5,
-    "completed": false
+    "completed": true
   },
   {
     "id": "feat-022",
     "name": "배포 준비 및 환경 변수 관리",
     "description": "프론트/백엔드 빌드 스크립트와 .env 템플릿을 정비해 배포를 준비한다",
     "sprint": 5,
-    "completed": false
+    "completed": true
   }
 ]

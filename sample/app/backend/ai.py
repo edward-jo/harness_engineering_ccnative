@@ -156,3 +156,73 @@ def recommend_priority(title: str, due_date: Optional[date]) -> str:
     except Exception as exc:  # noqa: BLE001
         logger.warning("우선순위 추천 실패: %s", exc)
         return FALLBACK_PRIORITY
+
+
+# 브리핑 폴백 문구 (API 실패 또는 키 미설정 시 사용)
+FALLBACK_BRIEFING = (
+    "오늘의 할 일을 확인하세요. "
+    "우선순위가 높은 항목부터 차례로 처리하는 것을 권장합니다. "
+    "마감일이 임박한 일이 있다면 가장 먼저 살펴보세요. "
+    "완료한 항목은 체크 표시로 정리하면 성취감을 얻을 수 있습니다."
+)
+
+
+def generate_briefing(todos: list) -> str:
+    """미완료 할일 목록을 컨텍스트로 일일 브리핑을 생성한다.
+
+    성공 시: Claude API가 생성한 3~5문장의 한국어 브리핑
+    실패 시: FALLBACK_BRIEFING 고정 문구
+
+    매개변수:
+        todos: 미완료 할일 항목 리스트.
+               각 항목은 title, category, priority, due_date(옵션) 속성을 가질 수 있는
+               ORM 객체 또는 딕셔너리 형태를 모두 허용한다.
+    """
+    client = _get_client()
+    if client is None:
+        return FALLBACK_BRIEFING
+
+    # todos를 요약 가능한 문자열로 직렬화 (ORM/딕셔너리 둘 다 지원)
+    def _get_attr(item, key: str):
+        if isinstance(item, dict):
+            return item.get(key)
+        return getattr(item, key, None)
+
+    lines: list[str] = []
+    for todo in todos[:20]:  # 너무 많으면 상위 20개만 컨텍스트로 제공
+        title = _get_attr(todo, "title") or ""
+        category = _get_attr(todo, "category") or "기타"
+        priority = _get_attr(todo, "priority") or "medium"
+        due_date = _get_attr(todo, "due_date")
+        due_text = f" (마감: {due_date})" if due_date else ""
+        lines.append(f"- [{priority}/{category}] {title}{due_text}")
+    todo_block = "\n".join(lines) if lines else "(미완료 할일 없음)"
+
+    prompt = (
+        "당신은 사용자의 일일 할 일 관리를 돕는 비서입니다.\n"
+        "아래 미완료 할일 목록을 분석해 오늘의 일일 브리핑을 한국어로 작성하세요.\n\n"
+        "요구사항:\n"
+        "- 정확히 3~5문장으로 작성하세요.\n"
+        "- 가장 우선순위가 높거나 마감일이 임박한 일을 먼저 언급하세요.\n"
+        "- 긍정적이고 동기 부여되는 어조를 유지하세요.\n"
+        "- 인사말이나 서두 없이 바로 본론을 시작하세요.\n\n"
+        f"미완료 할일 목록:\n{todo_block}\n"
+    )
+
+    try:
+        message = client.messages.create(
+            model=MODEL_ID,
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = ""
+        for block in message.content:
+            if getattr(block, "type", None) == "text":
+                text += block.text
+        result = text.strip()
+        if not result:
+            return FALLBACK_BRIEFING
+        return result
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("일일 브리핑 생성 실패: %s", exc)
+        return FALLBACK_BRIEFING

@@ -91,3 +91,18 @@ export async function clearCompleted(): Promise<number> {
   const response = await client.delete<{ deleted: number }>('/todos/completed');
   return response.data.deleted;
 }
+
+/** 카테고리별 통계 응답 타입 */
+export type CategoryStats = Record<string, { total: number; completed: number }>;
+
+/** 카테고리별 할일 통계(전체/완료)를 조회한다. */
+export async function getStats(): Promise<CategoryStats> {
+  const response = await client.get<CategoryStats>('/stats');
+  return response.data;
+}
+
+/** AI 일일 브리핑 텍스트를 생성해 반환한다. */
+export async function getBriefing(): Promise<string> {
+  const response = await client.post<{ briefing: string }>('/briefing');
+  return response.data.briefing;
+}
