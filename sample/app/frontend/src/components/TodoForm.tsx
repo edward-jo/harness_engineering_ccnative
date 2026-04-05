@@ -10,8 +10,9 @@ export default function TodoForm() {
   const queryClient = useQueryClient();
 
   // 할일 생성 뮤테이션 — 성공 시 목록 쿼리 무효화해 자동 리페치
+  // (createTodo가 선택 인자 dueDate를 받으므로 래퍼로 명시적 1-arg 호출)
   const mutation = useMutation({
-    mutationFn: createTodo,
+    mutationFn: (nextTitle: string) => createTodo(nextTitle),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       setTitle('');

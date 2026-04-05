@@ -1,16 +1,16 @@
-# 스프린트 2 계약서
+# 스프린트 3 계약서
 
 **작성일**: 2026-04-05
-**대상 스프린트**: 2 — 프론트엔드 기본 UI
+**대상 스프린트**: 3 — 고급 편집 기능
 **담당 에이전트**: generator → evaluator
 
 ---
 
 ## 목표
 
-AI Todo Manager의 프론트엔드 기본 UI를 React 18 + Vite + TypeScript + Tailwind CSS로 구현한다.
-백엔드 CRUD API와 연동하여 할일 추가, 목록 표시, 완료 토글, 삭제 기능을 제공하고
-모바일과 데스크톱에서 모두 사용 가능한 반응형 레이아웃을 완성한다.
+AI Todo Manager에 고급 편집 기능을 추가한다.
+필터 탭(전체/진행중/완료), 인라인 수정, 마감일 설정, 완료 항목 일괄 삭제 기능을 구현해
+사용자가 더 효율적으로 할일을 관리할 수 있도록 한다.
 
 ---
 
@@ -18,62 +18,48 @@ AI Todo Manager의 프론트엔드 기본 UI를 React 18 + Vite + TypeScript + T
 
 evaluator는 아래 기준을 하나씩 검증하고 PASS/FAIL로 판정한다.
 
+### 백엔드 API
+
+- [ ] **기준 1**: GET `/api/todos?status=active` 시 미완료 항목만 반환한다
+- [ ] **기준 2**: GET `/api/todos?status=completed` 시 완료 항목만 반환한다
+- [ ] **기준 3**: GET `/api/todos` (파라미터 없음) 시 전체 항목을 반환한다
+- [ ] **기준 4**: PUT `/api/todos/{id}` 로 제목/마감일 수정이 가능하다 (200 반환)
+- [ ] **기준 5**: DELETE `/api/todos/completed` 로 완료 항목 전체 삭제가 가능하다 (200 반환)
+- [ ] **기준 6**: POST `/api/todos` 시 `due_date` 필드(선택)를 저장한다
+- [ ] **기준 7**: `Todo` 응답 스키마에 `due_date` (nullable) 필드가 포함된다
+
 ### 프론트엔드 UI
 
-- [ ] **기준 1**: 페이지 진입 시 "AI Todo Manager" 제목과 할일 추가 폼이 렌더링된다
-- [ ] **기준 2**: 입력 필드에 텍스트 입력 후 Enter 키 또는 "추가" 버튼 클릭 시 새 할일이 생성된다 (POST `/api/todos`)
-- [ ] **기준 3**: 페이지 로드 시 GET `/api/todos`로 목록을 받아와 렌더링한다
-- [ ] **기준 4**: 빈 목록일 때 "할 일이 없습니다" 안내 문구가 표시된다
-- [ ] **기준 5**: 체크박스 클릭 시 완료 상태가 토글되고 완료된 항목에는 취소선(line-through)이 표시된다 (PATCH `/api/todos/{id}/toggle`)
-- [ ] **기준 6**: 삭제 버튼 클릭 시 항목이 목록에서 제거된다 (DELETE `/api/todos/{id}`)
-- [ ] **기준 7**: 모바일(375px) 화면에서 레이아웃이 깨지지 않고 모든 요소가 가로 스크롤 없이 표시된다
-- [ ] **기준 8**: 데스크톱(1280px) 화면에서 중앙 정렬된 컨테이너로 레이아웃이 정상 렌더링된다
-
-### 파일 구조
-
-- [ ] **기준 9**: `app/frontend/package.json`에 `react`, `react-dom`, `@tanstack/react-query`, `axios`, `vite`, `typescript`, `tailwindcss` 의존성이 선언되어 있다
-- [ ] **기준 10**: `app/frontend/vite.config.ts`에 `/api` → `http://localhost:8000` 프록시가 설정되어 있다
+- [ ] **기준 8**: 필터 탭(전체/진행중/완료)이 렌더링되고 탭 전환 시 URL 쿼리 파라미터(`?status=active` 등)가 동기화된다
+- [ ] **기준 9**: 필터 상태에 따라 목록이 서버 필터링 결과로 갱신된다
+- [ ] **기준 10**: TodoItem을 더블클릭하면 인라인 수정 input으로 전환된다
+- [ ] **기준 11**: Enter 키로 수정 내용을 저장하고(PUT 호출) Escape 키로 취소한다
+- [ ] **기준 12**: 마감일이 오늘 이전(지난 날짜)인 경우 빨간색으로 표시된다
+- [ ] **기준 13**: 완료 항목이 1개 이상일 때만 "완료 삭제" 버튼이 표시되고 클릭 시 모든 완료 항목이 삭제된다
 
 ---
 
 ## 기술 제약
 
-- 프론트엔드: React 18, Vite, TypeScript (strict mode)
-- 스타일링: Tailwind CSS
-- 서버 상태: TanStack Query (React Query) v5
-- HTTP 클라이언트: Axios
-- 서버: Vite 개발 서버, 포트 `:5173`
-- API 기본 URL: Vite 프록시(`/api`) 사용, 환경변수 미사용
-- npm 패키지 설치는 하지 않고 `package.json` 파일만 생성
+- 백엔드: FastAPI, SQLAlchemy, SQLite
+- 프론트엔드: React 18, Vite, TypeScript (strict mode), Tailwind CSS, TanStack Query
+- 라우트 등록 순서 준수: DELETE `/api/todos/completed` 를 DELETE `/api/todos/{id}` 보다 먼저 등록 (경로 충돌 방지)
+- URL 쿼리 파라미터는 브라우저 네이티브 `URLSearchParams` + `window.history` 또는 경량 상태 관리로 처리 (react-router 미사용)
+- npm 패키지 설치는 하지 않는다 (패키지 추가 금지)
 
 ---
 
-## 디렉토리 구조
+## 추가 API 명세
 
 ```
-app/frontend/
-├── package.json
-├── vite.config.ts
-├── tsconfig.json
-├── tsconfig.node.json
-├── tailwind.config.js
-├── postcss.config.js
-├── index.html
-└── src/
-    ├── main.tsx
-    ├── App.tsx
-    ├── index.css
-    ├── api/
-    │   └── todos.ts         # API 함수 (getTodos, createTodo, toggleTodo, deleteTodo)
-    └── components/
-        ├── TodoForm.tsx     # 입력 폼
-        ├── TodoList.tsx     # 목록
-        └── TodoItem.tsx     # 개별 항목 (체크박스 + 삭제 버튼)
+GET    /api/todos?status=active|completed  → 200, 필터링된 목록
+PUT    /api/todos/{id}                     → 200, 수정된 Todo (body: { title?, due_date? })
+DELETE /api/todos/completed                → 200, { deleted: <count> }
 ```
 
 ---
 
-## 데이터 타입
+## 데이터 타입 변경
 
 ```typescript
 interface Todo {
@@ -81,5 +67,6 @@ interface Todo {
   title: string;
   completed: boolean;
   created_at: string; // ISO 8601
+  due_date: string | null; // YYYY-MM-DD (ISO 8601 date)
 }
 ```

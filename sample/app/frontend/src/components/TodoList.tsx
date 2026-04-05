@@ -1,14 +1,19 @@
 // 할일 목록 컴포넌트
-// - TanStack Query로 GET /api/todos를 호출해 목록을 렌더링한다
+// - TanStack Query로 GET /api/todos(?status=...)를 호출해 목록을 렌더링한다
 // - 빈 목록일 때는 안내 문구를 표시한다
+// - 필터 상태(status)는 상위에서 주입받는다
 import { useQuery } from '@tanstack/react-query';
-import { getTodos } from '../api/todos';
+import { getTodos, type TodoStatus } from '../api/todos';
 import TodoItem from './TodoItem';
 
-export default function TodoList() {
+interface TodoListProps {
+  status: TodoStatus;
+}
+
+export default function TodoList({ status }: TodoListProps) {
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['todos'],
-    queryFn: getTodos,
+    queryKey: ['todos', status],
+    queryFn: () => getTodos(status),
   });
 
   if (isLoading) {

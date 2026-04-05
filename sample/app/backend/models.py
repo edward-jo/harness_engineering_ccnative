@@ -1,8 +1,9 @@
 """SQLAlchemy ORM 모델 정의."""
 
-from datetime import datetime
+from datetime import date, datetime
+from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, Date, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -16,6 +17,7 @@ class Todo(Base):
         title: 할일 제목 (필수)
         completed: 완료 여부 (기본값 False)
         created_at: 생성 시각 (UTC 기준 자동 설정)
+        due_date: 마감일 (선택, YYYY-MM-DD 형식)
     """
 
     __tablename__ = "todos"
@@ -26,3 +28,4 @@ class Todo(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
+    due_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)

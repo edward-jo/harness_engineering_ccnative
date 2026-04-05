@@ -69,6 +69,31 @@
   진행: ?/? 기능 완료
   최근 스프린트: ? (?)
 
+[2026-04-05 스프린트 3 구현] 고급 편집 기능 완료
+  구현/수정 파일:
+    백엔드:
+      - app/backend/models.py          (Todo에 due_date: Optional[date] 필드 추가)
+      - app/backend/schemas.py         (TodoCreate.due_date, TodoUpdate 신규, TodoResponse.due_date 추가)
+      - app/backend/routers/todos.py   (GET ?status= 필터, PUT /{id} 수정, DELETE /completed 추가)
+      - app/backend/main.py            (기존 DB에 due_date 컬럼 자동 ALTER TABLE 마이그레이션)
+    프론트엔드:
+      - app/frontend/src/api/todos.ts              (getTodos(status)/updateTodo/clearCompleted 추가)
+      - app/frontend/src/hooks/useStatusFilter.ts  (신규, URL ?status= 동기화 훅)
+      - app/frontend/src/components/FilterTabs.tsx (신규, 전체/진행중/완료 탭)
+      - app/frontend/src/components/ClearCompleted.tsx (신규, 완료 일괄 삭제 버튼)
+      - app/frontend/src/components/TodoItem.tsx   (인라인 수정 + due_date 표시/편집, 오늘 이전 빨간색)
+      - app/frontend/src/components/TodoForm.tsx   (createTodo 래핑으로 TS 타입 오류 수정)
+      - app/frontend/src/App.tsx                   (URL 필터 상태 + FilterTabs + ClearCompleted 통합)
+  엔드포인트 추가:
+    - GET    /api/todos?status=active|completed  → 필터링 목록 (200)
+    - PUT    /api/todos/{id}                     → 제목/마감일 수정 (200)
+    - DELETE /api/todos/completed                → 완료 항목 일괄 삭제 (200, {"deleted": n})
+  실제 API 검증 완료 (localhost:8000 수동 호출):
+    - active/completed 필터링, PUT 수정, DELETE completed 모두 예상대로 동작
+    - POST 시 due_date 저장 및 응답 스키마에 due_date 포함 확인
+  완료 기능: feat-011 ~ feat-014 (14/22)
+  다음 스프린트: 4 (AI 기능) — feat-015 ~ feat-018
+
 [2026-04-05 스프린트 2 구현] 프론트엔드 기본 UI 완료
   구현 파일:
     - app/frontend/package.json            (React 18, Vite, TS, TanStack Query, Axios, Tailwind 의존성 선언)

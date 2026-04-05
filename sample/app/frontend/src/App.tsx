@@ -1,9 +1,26 @@
 // 앱 최상위 컴포넌트
 // - 반응형 컨테이너 레이아웃을 정의한다 (모바일 375px, 데스크톱 1280px 대응)
+// - URL 쿼리 파라미터(?status=...)와 동기화된 필터 상태를 관리한다
+// - 완료 항목 존재 시 ClearCompleted 버튼을 노출한다
+import { useQuery } from '@tanstack/react-query';
 import TodoForm from './components/TodoForm';
 import TodoList from './components/TodoList';
+import FilterTabs from './components/FilterTabs';
+import ClearCompleted from './components/ClearCompleted';
+import { useStatusFilter } from './hooks/useStatusFilter';
+import { getTodos } from './api/todos';
 
 export default function App() {
+  const { status, setStatus } = useStatusFilter();
+
+  // 완료 항목 개수 조회 — "완료 삭제" 버튼 노출 여부 판단용
+  // (별도 쿼리 키로 캐시하여 필터 전환과 무관하게 유지)
+  const { data: completedTodos } = useQuery({
+    queryKey: ['todos', 'completed'],
+    queryFn: () => getTodos('completed'),
+  });
+  const completedCount = completedTodos?.length ?? 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
@@ -20,8 +37,17 @@ export default function App() {
           <TodoForm />
         </section>
 
+        <section className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sm:flex-1">
+            <FilterTabs value={status} onChange={setStatus} />
+          </div>
+          {completedCount > 0 && (
+            <ClearCompleted count={completedCount} />
+          )}
+        </section>
+
         <section>
-          <TodoList />
+          <TodoList status={status} />
         </section>
       </div>
     </div>
