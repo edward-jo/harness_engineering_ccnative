@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "sprint": 1,
-  "passed": 8,
-  "total": 8,
+  "sprint": 5,
+  "passed": 12,
+  "total": 12,
   "failures": [],
-  "note": "정적 코드 검증 완료. 파일 6개 존재 확인, API 엔드포인트 4개(POST/GET/PATCH/DELETE) 구조 검증, 404/422 에러 처리 확인, feature_list.json feat-001~005 모두 completed:true 확인."
+  "note": "정적 코드 검증 완료. [백엔드] routers/stats.py에 GET /api/stats 및 POST /api/briefing 엔드포인트 존재 확인. get_stats()에서 category별 {total, completed} 딕셔너리 구조 반환 확인. ai.py에 generate_briefing(todos: list) -> str 함수 존재 확인. _get_client()가 None이면 FALLBACK_BRIEFING 반환, except Exception 블록으로 API 실패 시 폴백 처리 확인. backend/.env.example에 ANTHROPIC_API_KEY 항목 확인. [프론트엔드] StatsPanel.tsx 존재 및 entries.map()으로 카테고리별 total/completed 수치와 진행바 렌더링 확인. DailyBriefing.tsx 존재 및 '오늘의 브리핑 받기' 버튼과 mutation.data 결과 표시 로직 확인. Toast.tsx 존재 및 success(초록)/error(빨강) TYPE_STYLES 타입별 스타일링 확인. useToast.ts 존재 및 toast/showToast/hideToast 상태 관리 확인. api/todos.ts에 getStats(), getBriefing() 함수 정의 확인. App.tsx에 StatsPanel, DailyBriefing, Toast import 및 렌더링 통합 확인. frontend/.env.example에 VITE_API_URL=http://localhost:8000 항목 확인. [feature_list.json] feat-019~022 모두 completed:true 확인."
 }
