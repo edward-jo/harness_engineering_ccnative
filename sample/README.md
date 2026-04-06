@@ -186,6 +186,17 @@ Generator 에이전트가 `sprint_contract.md`의 완료 기준을 기반으로 
 Generator로 구현 → Evaluator로 검증 → Stop 훅이 FAIL이면 자동 재실행합니다.  
 모든 기준 PASS 또는 최대 15회 도달 시 종료됩니다.
 
+### 전체 스프린트 자동 구현
+
+```
+/sprint loop all
+```
+
+사용자 개입 없이 모든 스프린트를 순서대로 자동 구현합니다.  
+각 스프린트마다 Generator → Evaluator를 실행하고, FAIL이면 최대 5회 재시도합니다.  
+5회 초과 시 해당 스프린트를 BLOCKED로 표시하고 전체 루프를 즉시 종료합니다.  
+이미 완료된 스프린트(`completed: true`)는 자동으로 건너뜁니다.
+
 ### 기타 커맨드
 
 ```
@@ -202,7 +213,8 @@ Generator로 구현 → Evaluator로 검증 → Stop 훅이 FAIL이면 자동 �
 | `/harness [아이디어]` | planner 에이전트로 기획 시작 |
 | `/sprint [숫자]` | generator로 해당 스프린트 구현 |
 | `/sprint review` | evaluator로 현재 스프린트 검증 |
-| `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 실행 |
+| `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 실행 (단일 스프린트) |
+| `/sprint loop all` | 모든 스프린트 자동 순차 구현 (사용자 개입 없음) |
 | `/sprint status` | 전체 진행 상황 리포트 |
 
 ---
