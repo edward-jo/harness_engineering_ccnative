@@ -25,6 +25,8 @@ examples/
   todo-manager/                         ← harness_framework/로 완성한 레퍼런스 project (5스프린트 22 feature)
     app/                                (generator가 만든 실제 코드)
     archive/sprints/todo-manager/       (스프린트별 스냅샷)
+  stack-templates/                      ← 바로 복사해 쓸 수 있는 stack.md 모음
+    react-fastapi.md, nextjs-prisma.md, django.md, go-htmx.md
 
 install.sh                              ← 다른 리포에 framework를 설치하는 curl|bash 인스톨러
 tools/

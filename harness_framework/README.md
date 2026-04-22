@@ -149,6 +149,7 @@ diff /path/to/installed/.claude/stack.md /path/to/installed/.claude/stack.md.new
 - `.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**를 정의합니다.
 - `generator`와 `evaluator` 에이전트가 세션 시작 시 이 파일을 읽어 스택을 따릅니다.
 - 다른 스택으로 갈아끼우려면 이 파일만 수정하면 됩니다. 에이전트 프롬프트를 건드릴 필요 없음.
+- **Ready-made 템플릿**: [`examples/stack-templates/`](../examples/stack-templates/)에 React+FastAPI, Next.js+Prisma, Django+HTMX, Go+HTMX 등 바로 복사해 쓸 수 있는 `stack.md` 템플릿이 있습니다.
 
 ---
 
