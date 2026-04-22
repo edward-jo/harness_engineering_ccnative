@@ -1,0 +1,30 @@
+[
+  {
+    "id": "feat-015",
+    "name": "AI 카테고리 자동 분류",
+    "description": "Claude API로 할일 제목을 분석해 업무/개인/쇼핑/건강 등 카테고리를 자동 지정한다",
+    "sprint": 4,
+    "completed": true
+  },
+  {
+    "id": "feat-016",
+    "name": "AI 우선순위 추천",
+    "description": "Claude API로 내용과 마감일을 분석해 high/medium/low 우선순위를 추천한다",
+    "sprint": 4,
+    "completed": true
+  },
+  {
+    "id": "feat-017",
+    "name": "카테고리 뱃지 UI",
+    "description": "AI가 분류한 카테고리를 색상 뱃지로 시각화한다",
+    "sprint": 4,
+    "completed": true
+  },
+  {
+    "id": "feat-018",
+    "name": "우선순위 정렬",
+    "description": "우선순위 기준으로 목록을 정렬하는 옵션을 제공한다",
+    "sprint": 4,
+    "completed": true
+  }
+]

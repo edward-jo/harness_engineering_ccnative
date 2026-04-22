@@ -1,0 +1,69 @@
+[
+  {
+    "sprint": 1,
+    "passed": 5,
+    "total": 5,
+    "status": "pre-migration",
+    "date": "2026-04-05",
+    "features": [
+      "feat-001",
+      "feat-002",
+      "feat-003",
+      "feat-004",
+      "feat-005"
+    ]
+  },
+  {
+    "sprint": 2,
+    "passed": 5,
+    "total": 5,
+    "status": "pre-migration",
+    "date": "2026-04-05",
+    "features": [
+      "feat-006",
+      "feat-007",
+      "feat-008",
+      "feat-009",
+      "feat-010"
+    ]
+  },
+  {
+    "sprint": 3,
+    "passed": 4,
+    "total": 4,
+    "status": "pre-migration",
+    "date": "2026-04-05",
+    "features": [
+      "feat-011",
+      "feat-012",
+      "feat-013",
+      "feat-014"
+    ]
+  },
+  {
+    "sprint": 4,
+    "passed": 4,
+    "total": 4,
+    "status": "pre-migration",
+    "date": "2026-04-05",
+    "features": [
+      "feat-015",
+      "feat-016",
+      "feat-017",
+      "feat-018"
+    ]
+  },
+  {
+    "sprint": 5,
+    "passed": 12,
+    "total": 12,
+    "status": "PASS",
+    "date": "2026-04-05",
+    "features": [
+      "feat-019",
+      "feat-020",
+      "feat-021",
+      "feat-022"
+    ]
+  }
+]

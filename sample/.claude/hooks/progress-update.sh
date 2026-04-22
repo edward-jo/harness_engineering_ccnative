@@ -6,8 +6,10 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 
 if echo "$COMMAND" | grep -q 'git commit'; then
   TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-  COMMIT_MSG=$(echo "$COMMAND" | grep -oP '(?<=-m ")[^"]+' | head -1)
-  echo "[$TIMESTAMP] 커밋: $COMMIT_MSG" >> claude-progress.txt
+  COMMIT_MSG=$(echo "$COMMAND" | sed -n 's/.*-m "\([^"]*\)".*/\1/p' | head -1)
+  if [ -n "$COMMIT_MSG" ]; then
+    echo "[$TIMESTAMP] 커밋: $COMMIT_MSG" >> claude-progress.txt
+  fi
 fi
 
 exit 0

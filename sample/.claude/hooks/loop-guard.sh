@@ -23,10 +23,10 @@ if [ -f "sprint_result.json" ]; then
   STATUS=$(jq -r '.status' sprint_result.json 2>/dev/null)
 
   if [ "$STATUS" = "FAIL" ]; then
-    FAILS=$(jq -r '.failures | join(", ")' sprint_result.json 2>/dev/null)
-    SPRINT=$(jq -r '.sprint' sprint_result.json 2>/dev/null)
-    PASSED=$(jq -r '.passed' sprint_result.json 2>/dev/null)
-    TOTAL=$(jq -r '.total' sprint_result.json 2>/dev/null)
+    FAILS=$(jq -r '(.failures // []) | join(", ")' sprint_result.json 2>/dev/null)
+    SPRINT=$(jq -r '.sprint // "?"' sprint_result.json 2>/dev/null)
+    PASSED=$(jq -r '.passed // "?"' sprint_result.json 2>/dev/null)
+    TOTAL=$(jq -r '.total // "?"' sprint_result.json 2>/dev/null)
     NEW_COUNT=$((COUNT + 1))
     echo "$NEW_COUNT" > "$LOOP_COUNT_FILE"
 

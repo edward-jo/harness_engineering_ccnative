@@ -1,0 +1,8 @@
+{
+  "status": "pre-migration",
+  "sprint": 2,
+  "passed": 5,
+  "total": 5,
+  "failures": [],
+  "note": "pre-migration placeholder"
+}

@@ -1,0 +1,8 @@
+{
+  "slug": "todo-manager",
+  "title": "AI Todo Manager",
+  "idea": "Claude API로 할일을 자동 분류하고 우선순위를 추천하는 AI Todo Manager",
+  "started": "2026-04-05",
+  "finished": "2026-04-22",
+  "sprint_count": 5
+}

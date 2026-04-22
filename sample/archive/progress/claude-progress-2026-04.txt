@@ -1,0 +1,174 @@
+
+[2026-04-22 23:01:35] --- migration rotation: 상위 172 라인 이월 ---
+[2026-04-05 초기화] 하네스 설정 완료 - AI Todo Manager 프로젝트 시작
+  대상 앱: AI Todo Manager (React + FastAPI)
+  총 기능 수: 22개 (스프린트 5개)
+  현재 스프린트: 1 (백엔드 CRUD API)
+
+# 이 파일은 세션 간 컨텍스트 이월을 위한 진행 상황 로그입니다.
+# session-end.sh 훅이 자동으로 업데이트합니다.
+# generator 에이전트는 새 세션 시작 시 이 파일을 반드시 읽어야 합니다.
+
+[2026-04-05 16:22:10] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:30:19] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 스프린트 1 구현] 백엔드 CRUD API 완료
+  구현 파일:
+    - app/backend/main.py         (FastAPI 진입점, CORS, 테이블 자동 생성)
+    - app/backend/database.py     (SQLAlchemy 엔진/세션, get_db 의존성)
+    - app/backend/models.py       (Todo ORM: id, title, completed, created_at)
+    - app/backend/schemas.py      (TodoCreate, TodoResponse Pydantic 스키마)
+    - app/backend/routers/todos.py (CRUD 4개 엔드포인트)
+    - app/backend/requirements.txt
+    - app/backend/.gitignore
+    - app/init.sh (uvicorn app.backend.main:app 실행으로 업데이트)
+  엔드포인트:
+    - POST   /api/todos            → 201, 할일 생성 (빈 title 422 거부)
+    - GET    /api/todos            → 200, 최신순 목록
+    - PATCH  /api/todos/{id}/toggle → 200, 완료 상태 반전 (없으면 404)
+    - DELETE /api/todos/{id}       → 204, 삭제 (없으면 404)
+  완료 기능: feat-001, feat-002, feat-003, feat-004, feat-005 (5/22)
+  다음 스프린트: 2 (프론트엔드 기본 UI) — feat-006 ~ feat-010
+
+[2026-04-05 22:39:00] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:43:26] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:46:03] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:49:35] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:52:41] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:54:06] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:54:54] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:56:58] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 22:57:12] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 스프린트 3 구현] 고급 편집 기능 완료
+  구현/수정 파일:
+    백엔드:
+      - app/backend/models.py          (Todo에 due_date: Optional[date] 필드 추가)
+      - app/backend/schemas.py         (TodoCreate.due_date, TodoUpdate 신규, TodoResponse.due_date 추가)
+      - app/backend/routers/todos.py   (GET ?status= 필터, PUT /{id} 수정, DELETE /completed 추가)
+      - app/backend/main.py            (기존 DB에 due_date 컬럼 자동 ALTER TABLE 마이그레이션)
+    프론트엔드:
+      - app/frontend/src/api/todos.ts              (getTodos(status)/updateTodo/clearCompleted 추가)
+      - app/frontend/src/hooks/useStatusFilter.ts  (신규, URL ?status= 동기화 훅)
+      - app/frontend/src/components/FilterTabs.tsx (신규, 전체/진행중/완료 탭)
+      - app/frontend/src/components/ClearCompleted.tsx (신규, 완료 일괄 삭제 버튼)
+      - app/frontend/src/components/TodoItem.tsx   (인라인 수정 + due_date 표시/편집, 오늘 이전 빨간색)
+      - app/frontend/src/components/TodoForm.tsx   (createTodo 래핑으로 TS 타입 오류 수정)
+      - app/frontend/src/App.tsx                   (URL 필터 상태 + FilterTabs + ClearCompleted 통합)
+  엔드포인트 추가:
+    - GET    /api/todos?status=active|completed  → 필터링 목록 (200)
+    - PUT    /api/todos/{id}                     → 제목/마감일 수정 (200)
+    - DELETE /api/todos/completed                → 완료 항목 일괄 삭제 (200, {"deleted": n})
+  실제 API 검증 완료 (localhost:8000 수동 호출):
+    - active/completed 필터링, PUT 수정, DELETE completed 모두 예상대로 동작
+    - POST 시 due_date 저장 및 응답 스키마에 due_date 포함 확인
+  완료 기능: feat-011 ~ feat-014 (14/22)
+  다음 스프린트: 4 (AI 기능) — feat-015 ~ feat-018
+
+[2026-04-05 스프린트 2 구현] 프론트엔드 기본 UI 완료
+  구현 파일:
+    - app/frontend/package.json            (React 18, Vite, TS, TanStack Query, Axios, Tailwind 의존성 선언)
+    - app/frontend/vite.config.ts          (/api → localhost:8000 프록시)
+    - app/frontend/tsconfig.json           (strict mode)
+    - app/frontend/tsconfig.node.json
+    - app/frontend/tailwind.config.js
+    - app/frontend/postcss.config.js
+    - app/frontend/index.html
+    - app/frontend/.gitignore
+    - app/frontend/src/main.tsx            (QueryClientProvider 초기화)
+    - app/frontend/src/App.tsx             (반응형 컨테이너 레이아웃)
+    - app/frontend/src/index.css           (Tailwind 레이어)
+    - app/frontend/src/vite-env.d.ts
+    - app/frontend/src/api/todos.ts        (getTodos/createTodo/toggleTodo/deleteTodo)
+    - app/frontend/src/components/TodoForm.tsx  (입력 폼, Enter/버튼 제출)
+    - app/frontend/src/components/TodoList.tsx  (목록 + 빈 상태 안내)
+    - app/frontend/src/components/TodoItem.tsx  (체크박스 + 삭제 버튼)
+  주요 특징:
+    - API URL은 Vite 프록시(`/api`)로 처리 (환경변수 미사용)
+    - React Query의 invalidateQueries로 변경 후 자동 리페치
+    - Tailwind 반응형 유틸(sm: 등)로 모바일/데스크톱 대응
+    - 빈 목록일 때 "할 일이 없습니다" 안내 문구 노출
+    - 완료 항목은 line-through + text-gray-400으로 시각화
+  완료 기능: feat-006 ~ feat-010 (10/22)
+  다음 스프린트: 3 (고급 편집 기능) — feat-011 ~ feat-014
+
+[2026-04-05 23:30:40] 세션 종료
+  진행: ?/? 기능 완료
+  최근 스프린트: ? (?)
+
+[2026-04-05 스프린트 4 구현] AI 통합 완료
+  구현/수정 파일:
+    백엔드:
+      - app/backend/models.py          (Todo에 category(기본값 "기타"), priority(기본값 "medium") 컬럼 추가)
+      - app/backend/schemas.py         (TodoCreate/TodoUpdate/TodoResponse에 category/priority 필드 추가)
+      - app/backend/ai.py              (신규, Claude API classify_todo/recommend_priority + 안전 폴백)
+      - app/backend/routers/todos.py   (POST 시 AI 분류/추천 자동 호출, PUT에 category/priority 수정 지원)
+      - app/backend/main.py            (python-dotenv 로드, category/priority 컬럼 자동 ALTER TABLE 마이그레이션)
+      - app/backend/requirements.txt   (anthropic==0.39.0 추가)
+      - app/backend/.env.example       (신규, ANTHROPIC_API_KEY 템플릿)
+    프론트엔드:
+      - app/frontend/src/api/todos.ts              (Todo 타입에 category/priority, Priority/Category 타입 추가)
+      - app/frontend/src/components/CategoryBadge.tsx (신규, 8가지 카테고리 색상 뱃지)
+      - app/frontend/src/components/PriorityBadge.tsx (신규, 3가지 우선순위 뱃지)
+      - app/frontend/src/components/SortControls.tsx  (신규, 우선순위 정렬 토글 버튼)
+      - app/frontend/src/components/TodoItem.tsx      (CategoryBadge, PriorityBadge 표시 추가)
+      - app/frontend/src/components/TodoList.tsx      (sortByPriority prop + high>medium>low 정렬)
+      - app/frontend/src/App.tsx                      (SortControls 통합, sortByPriority 상태 관리)
+  폴백 동작 검증:
+    - ANTHROPIC_API_KEY 미설정 시 classify_todo→"기타", recommend_priority→"medium" 정상 반환
+    - anthropic 패키지 미설치·API 호출 실패 등 모든 예외를 폴백으로 처리
+  API 검증 완료 (localhost:8000):
+    - POST /api/todos 응답에 category="기타", priority="medium" 포함
+    - POST에 category/priority 명시적 전달 시 해당 값 유지
+    - PUT /api/todos/{id}로 category/priority 수정 정상 동작
+  완료 기능: feat-015 ~ feat-018 (18/22)
+  다음 스프린트: 5 (대시보드·브리핑·에러 처리·배포) — feat-019 ~ feat-022
+
+[2026-04-05 스프린트 5 구현] 대시보드 및 배포 준비 완료
+  구현/수정 파일:
+    백엔드:
+      - app/backend/ai.py                    (generate_briefing 함수 + FALLBACK_BRIEFING 추가)
+      - app/backend/routers/stats.py         (신규, GET /api/stats + POST /api/briefing)
+      - app/backend/main.py                  (stats 라우터 등록)
+      - app/backend/database.py              (DATABASE_URL 환경변수 지원, PostgreSQL 대비)
+      - app/backend/.env.example             (DATABASE_URL 항목 추가)
+    프론트엔드:
+      - app/frontend/src/api/todos.ts        (getStats/getBriefing + CategoryStats 타입 추가)
+      - app/frontend/src/hooks/useToast.ts   (신규, show/hide + 자동 숨김 타이머)
+      - app/frontend/src/components/Toast.tsx         (신규, success/error 색상 구분)
+      - app/frontend/src/components/StatsPanel.tsx    (신규, Tailwind 바 차트로 카테고리별 통계)
+      - app/frontend/src/components/DailyBriefing.tsx (신규, 브리핑 생성 버튼 + 결과 표시)
+      - app/frontend/src/main.tsx            (QueryCache/MutationCache 글로벌 에러 → CustomEvent)
+      - app/frontend/src/App.tsx             (StatsPanel/DailyBriefing/Toast 통합, app:toast 이벤트 구독)
+      - app/frontend/.env.example            (신규, VITE_API_URL 템플릿)

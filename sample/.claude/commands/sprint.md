@@ -1,5 +1,11 @@
 스프린트를 관리합니다. $ARGUMENTS에 따라 다르게 동작합니다:
 
+## 전제
+
+모든 서브커맨드 시작 전 `current_project.txt`를 읽어 active project slug를 확인하세요. 비어있으면 중단하고 `/harness <아이디어>`를 안내합니다.
+
+---
+
 - **숫자** (예: `1`, `3`):
   generator 에이전트를 사용해서 해당 스프린트를 구현하세요.
   구현 전 `sprint_contract.md`에 완료 기준을 먼저 작성하세요.
@@ -15,9 +21,10 @@
   이후 Stop 훅(`.claude/hooks/loop-guard.sh`)이 자동으로 작동합니다:
   - `sprint_result.json`의 status가 FAIL이면 Claude를 재실행시켜 generator 수정 → evaluator 재검증을 반복합니다.
   - PASS 또는 최대 15회 도달 시 루프가 종료됩니다.
+  루프 종료 후 사용자에게 `/sprint close`를 안내하세요.
 
 - **loop all**:
-  모든 스프린트를 순서대로 자동 구현합니다. 사용자 개입 없이 완전 자동으로 동작합니다.
+  현재 active project의 모든 스프린트를 순서대로 자동 구현합니다. 사용자 개입 없이 완전 자동으로 동작합니다.
 
   **실행 절차**:
   1. `feature_list.json`을 읽어 전체 스프린트 번호 목록을 파악하세요.
@@ -28,7 +35,7 @@
   각 스프린트마다 (최대 재시도 5회):
     a. generator 에이전트로 해당 스프린트 구현
     b. evaluator 에이전트로 검증 → sprint_result.json 업데이트
-    c. status == "PASS" → 다음 스프린트로 진행
+    c. status == "PASS" → `.claude/hooks/sprint-close.sh` 실행으로 archive 이동 후 다음 스프린트로 진행
        status == "FAIL" → 재시도 횟수 증가 후 a로 돌아감
        재시도 5회 초과 → 해당 스프린트를 BLOCKED로 표시하고 즉시 전체 루프 종료
   ```
@@ -44,6 +51,25 @@
   - evaluator 결과를 반드시 확인한 후 다음 스프린트로 넘어갑니다.
   - generator 호출 시 이전 스프린트의 구현 내용이 컨텍스트로 전달되도록 sprint_contract.md와 claude-progress.txt를 참조하도록 지시합니다.
 
+- **close**:
+  현재 `sprint_result.json`이 PASS 상태일 때 해당 스프린트를 `archive/sprints/<slug>/sprint_N/`으로 이동합니다.
+
+  ```bash
+  bash .claude/hooks/sprint-close.sh
+  ```
+
+  이 헬퍼는 다음을 수행합니다:
+  - `sprint_contract.md` → `archive/sprints/<slug>/sprint_N/contract.md`
+  - `sprint_result.json` → `archive/sprints/<slug>/sprint_N/result.json`
+  - 해당 sprint의 완료 feature를 `feature_list.json`에서 제거하고 `features.json`으로 스냅샷
+  - `archive/sprints/<slug>/INDEX.json`에 요약 append
+  - `archive/sprints/<slug>/META.json`의 `sprint_count` 갱신
+
+  PASS가 아니면 close하지 않고 중단합니다 (헬퍼가 자체 검증).
+
 - **status**:
-  `feature_list.json`을 읽어서 전체 진행 상황을 리포트하세요.
-  스프린트별 완료율과 잔여 기능 목록을 표시하세요.
+  현재 project의 진행 상황을 리포트합니다.
+  - `current_project.txt`에서 slug 읽기
+  - active: `feature_list.json`의 항목 수·완료 수
+  - archived: `archive/sprints/<slug>/INDEX.json`의 각 sprint 요약
+  - 합산 기능 수와 마지막 close된 스프린트 표시

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "feat-011",
+    "name": "필터 탭 (전체/진행중/완료)",
+    "description": "상태별 필터링 탭으로 할일을 구분해서 표시한다",
+    "sprint": 3,
+    "completed": true
+  },
+  {
+    "id": "feat-012",
+    "name": "할일 인라인 수정",
+    "description": "항목 클릭으로 편집 모드 전환 후 제목을 수정한다",
+    "sprint": 3,
+    "completed": true
+  },
+  {
+    "id": "feat-013",
+    "name": "마감일 설정 기능",
+    "description": "할일마다 마감일(due_date) 필드를 추가하고 날짜 선택 UI를 제공한다",
+    "sprint": 3,
+    "completed": true
+  },
+  {
+    "id": "feat-014",
+    "name": "완료 항목 일괄 삭제",
+    "description": "완료된 할일을 한 번에 삭제하는 버튼을 제공한다",
+    "sprint": 3,
+    "completed": true
+  }
+]

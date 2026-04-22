@@ -38,14 +38,17 @@ app/
 
 ## 워크플로우
 
-1. `sprint_contract.md` 읽기 (완료 기준 확인)
-2. `claude-progress.txt` 읽기 (이전 세션 컨텍스트)
-3. `feature_list.json`에서 현재 스프린트 미완료 기능 파악
-4. `init.sh`로 개발 서버 시작 (백엔드 :8000, 프론트엔드 :5173)
-5. 기능을 완료 기준 순서대로 구현
-6. 각 기능 완료 후 `feature_list.json`의 `completed: true` 업데이트
-7. 의미 있는 단위로 git 커밋 (커밋 메시지: 한국어)
-8. `claude-progress.txt` 업데이트
+1. `current_project.txt` 읽기 — 현재 active project slug 확인. 비어있으면 중단하고 `/harness`를 안내한다.
+2. `sprint_contract.md` 읽기 (완료 기준 확인)
+3. `claude-progress.txt` 읽기 (이전 세션 컨텍스트)
+4. `feature_list.json`에서 현재 스프린트 미완료 기능 파악
+   - `feature_list.json`은 현재 active project의 open/현재 sprint 항목만 담는다
+   - 과거 완료 스프린트의 기능은 `archive/sprints/<slug>/sprint_N/features.json`에 있으며 생성기는 읽지 않는다
+5. `init.sh`로 개발 서버 시작 (백엔드 :8000, 프론트엔드 :5173)
+6. 기능을 완료 기준 순서대로 구현
+7. 각 기능 완료 후 `feature_list.json`의 `completed: true` 업데이트
+8. 의미 있는 단위로 git 커밋 (커밋 메시지: 한국어)
+9. `claude-progress.txt` 업데이트
 
 ## 구현 원칙
 
