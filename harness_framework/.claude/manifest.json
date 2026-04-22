@@ -1,8 +1,12 @@
 {
   "name": "claude-code-harness",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "released": "2026-04-23",
   "source": "https://github.com/edward-jo/harness_engineering_ccnative",
+  "changelog": {
+    "1.1.0": "/harness abandon 커맨드 추가 — 실패·중단 project를 archive/sprints/<slug>-abandoned-<ts>/로 버리고 같은 slug 재사용 가능. project-abandon.sh 헬퍼 신규.",
+    "1.0.0": "첫 릴리스: project 격리·stack 추상화·bounded state·install.sh·manifest·upgrade.sh."
+  },
   "files": {
     "framework": [
       ".claude/agents/planner.md",
@@ -14,6 +18,7 @@
       ".claude/hooks/progress-update.sh",
       ".claude/hooks/session-end.sh",
       ".claude/hooks/sprint-close.sh",
+      ".claude/hooks/project-abandon.sh",
       ".claude/stack.md",
       ".claude/settings.json",
       ".claude/manifest.json",

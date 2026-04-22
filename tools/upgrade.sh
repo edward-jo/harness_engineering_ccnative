@@ -35,6 +35,7 @@ STRUCTURAL_FILES=(
   ".claude/hooks/progress-update.sh"
   ".claude/hooks/session-end.sh"
   ".claude/hooks/sprint-close.sh"
+  ".claude/hooks/project-abandon.sh"
   ".claude/manifest.json"
   ".claude/HARNESS.md"
   ".claude/.gitignore"

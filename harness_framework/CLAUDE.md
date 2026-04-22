@@ -67,8 +67,9 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 |--------|------|
 | `/harness [아이디어]` | 새 project 시작 (active 있으면 거부) |
 | `/harness extend [추가 아이디어]` | 현재 project에 sprint 추가 |
-| `/harness finish` | 현재 project를 archive로 이동 + 루트 리셋 |
-| `/harness list` | project 나열 |
+| `/harness finish` | 정상 완료된 project를 `archive/sprints/<slug>/`로 이동 |
+| `/harness abandon` | 실패·중단 project를 `archive/sprints/<slug>-abandoned-<ts>/`로 이동 (같은 slug 재사용 가능) |
+| `/harness list` | project 나열 (finished / abandoned 구분) |
 | `/sprint [숫자]` | generator로 해당 스프린트 구현 |
 | `/sprint review` | evaluator로 현재 스프린트 검증 |
 | `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 |
@@ -86,5 +87,5 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 - evaluator는 검증 후 반드시 `sprint_result.json`을 기록한다 (루프 가드가 이 파일을 읽음).
 - 기능 완료 후 `feature_list.json`의 해당 항목을 `completed: true`로 업데이트한다.
 - 스프린트 PASS 후에는 반드시 `/sprint close`를 실행해 archive로 이동해야 active 파일이 bounded로 유지된다.
-- 새 project 시작 전에 `/harness finish`로 기존 project를 닫아야 한다.
+- 새 project 시작 전에 `/harness finish`(정상 완료) 또는 `/harness abandon`(실패·중단)으로 기존 project를 닫아야 한다.
 - 커밋 메시지는 한국어로 작성한다.

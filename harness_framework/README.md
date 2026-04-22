@@ -294,7 +294,8 @@ claude
 
 ```
 /harness extend 통계 대시보드와 모바일 최적화 추가  # 동일 project에 sprint 추가
-/harness finish                                   # 현재 project 종료 (archive로 이동)
+/harness finish                                   # 정상 완료 → archive/sprints/<slug>/
+/harness abandon                                  # 실패·중단 → archive/sprints/<slug>-abandoned-<ts>/
 /harness list                                     # 모든 project 나열
 ```
 
@@ -310,8 +311,9 @@ claude
 |--------|------|
 | `/harness [아이디어]` | 새 project 시작 (active가 있으면 거부) |
 | `/harness extend [추가 아이디어]` | 현재 active project에 sprint 추가 |
-| `/harness finish` | 현재 active project를 archive로 이동 + 루트 리셋 |
-| `/harness list` | archive + active project 나열 |
+| `/harness finish` | 정상 완료된 project를 `archive/sprints/<slug>/`로 이동 |
+| `/harness abandon` | 실패·중단된 project를 `archive/sprints/<slug>-abandoned-<ts>/`로 이동 (같은 slug 재사용 가능) |
+| `/harness list` | archive + active project 나열 (finished / abandoned 구분) |
 | `/sprint [숫자]` | generator로 해당 스프린트 구현 |
 | `/sprint review` | evaluator로 현재 스프린트 검증 |
 | `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 (단일 스프린트) |
