@@ -1,11 +1,11 @@
-# Claude Code 하네스 샘플
+# Claude Code 하네스 샘플 (framework)
 
-Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** 샘플 프로젝트입니다.
+Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework입니다.
 Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으로 Planner → Generator → Evaluator 루프를 구현합니다.
 
 하나의 리포에서 **여러 독립 아이디어(project)**를 순차적으로 진행할 수 있으며, 각 project는 자체 Sprint 번호 공간을 갖고 `archive/sprints/<slug>/`에 영구 보관됩니다.
 
-레퍼런스 project로 **AI Todo Manager** (React 18 + FastAPI, 5스프린트 22 feature) 구현이 `archive/sprints/todo-manager/`에 완료 상태로 보관되어 있습니다.
+> **실제 결과물 예시**: `../examples/todo-manager/`에 5스프린트 22 feature가 완료된 레퍼런스 project가 보관되어 있습니다.
 
 ---
 
@@ -14,21 +14,29 @@ Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으�
 | 도구 | 버전 | 용도 |
 |------|------|------|
 | [Claude Code](https://claude.ai/code) | 최신 | 하네스 실행 환경 |
-| Node.js | 18+ | 프론트엔드, Playwright MCP |
-| Python | 3.11+ | FastAPI 백엔드 |
 | jq | 1.6+ | 훅 스크립트 JSON 파싱 |
 | git | - | 진행 상황 커밋 |
+
+추가로 `.claude/stack.md`가 지정한 스택에 필요한 런타임 (Node.js, Python 등)이 필요합니다. 기본 stack.md는 React 18 + FastAPI를 전제로 Node.js 18+와 Python 3.11+를 요구합니다.
 
 > **Windows 사용자**: 훅 스크립트(`.sh`)는 Git Bash 또는 WSL 환경에서 실행됩니다.
 
 ---
 
-## 핵심 개념: Project
+## 핵심 개념
+
+### Project
 
 - **Project** = 하나의 아이디어 단위 (예: `todo-manager`, `dark-mode-companion`).
 - 각 project는 자체 Sprint 1..N을 가지며, 번호는 project-local.
 - 동시 active project는 단 하나. `current_project.txt`가 현재 slug를 담는다 (비어있으면 "no active project").
 - 새 아이디어 = 새 project = Sprint 1부터 리셋. 같은 project에 sprint를 더 붙이는 건 `/harness extend`.
+
+### Stack
+
+- `.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**를 정의합니다.
+- `generator`와 `evaluator` 에이전트가 세션 시작 시 이 파일을 읽어 스택을 따릅니다.
+- 다른 스택으로 갈아끼우려면 이 파일만 수정하면 됩니다. 에이전트 프롬프트를 건드릴 필요 없음.
 
 ---
 
@@ -38,10 +46,11 @@ Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으�
 sample/
 ├── .claude/
 │   ├── settings.json              # 훅 설정 (Stop, PostToolUse)
+│   ├── stack.md                   # 대상 스택 정의 (사용자 편집 가능)
 │   ├── agents/
 │   │   ├── planner.md             # 기획자: new/extend 두 모드
-│   │   ├── generator.md           # 구현자: 스프린트 기능 코딩
-│   │   └── evaluator.md           # 검증자: Playwright QA
+│   │   ├── generator.md           # 구현자: stack.md 기반으로 코딩
+│   │   └── evaluator.md           # 검증자: stack.md 기반 QA
 │   ├── hooks/
 │   │   ├── loop-guard.sh          # Stop 훅: FAIL 감지 시 루프 재실행
 │   │   ├── progress-update.sh     # PostToolUse: git commit 감지 로그
@@ -51,29 +60,21 @@ sample/
 │       ├── harness.md             # /harness 슬래시 커맨드 (new/extend/finish/list)
 │       └── sprint.md              # /sprint 슬래시 커맨드 (숫자/review/loop/close/status)
 ├── .mcp.json                      # Playwright MCP 서버 설정
-├── app/                           # generator가 구현하는 코드 (현재: todo-manager 결과물)
-│   ├── init.sh                    # 개발 서버 시작 (백엔드 :8000, 프론트 :5173)
-│   ├── backend/
-│   └── frontend/src/
 ├── current_project.txt            # 현재 active project slug (빈 문자열이면 없음)
 ├── feature_list.json              # 현재 active project의 open/현재 sprint 항목만
-├── sprint_plan.md                 # 현재 project의 현재 계획 (active일 때만 존재)
+├── sprint_plan.md                 # 현재 project의 계획 (active일 때만 존재)
 ├── sprint_contract.md             # 현재 sprint 완료 기준 (작업 중에만 존재)
 ├── sprint_result.json             # 현재 sprint 검증 결과 (close 후 archive로 이동)
-├── claude-progress.txt            # 최근 세션 로그 (200줄 초과 시 rotation)
-└── archive/
-    ├── sprints/
-    │   └── <project-slug>/
-    │       ├── META.json          # {slug, title, idea, started, finished, sprint_count}
-    │       ├── INDEX.json         # [{sprint, passed, total, status, date, features}]
-    │       ├── sprint_N/
-    │       │   ├── contract.md    # 해당 sprint 계약 (스냅샷)
-    │       │   ├── result.json    # 해당 sprint 검증 결과
-    │       │   └── features.json  # 해당 sprint에서 완료된 feature 목록
-    │       ├── feature_list.json  # project 종료 시 최종 스냅샷
-    │       └── sprint_plan.md     # project 종료 시 최종 계획 스냅샷
+├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
+└── archive/                       # project 아카이브 (처음엔 없음, /sprint close 시 생성)
+    ├── sprints/<project-slug>/
+    │   ├── META.json
+    │   ├── INDEX.json
+    │   ├── sprint_N/{contract.md,result.json,features.json}
+    │   ├── feature_list.json      # project 종료 시 최종 스냅샷
+    │   └── sprint_plan.md
     └── progress/
-        └── claude-progress-YYYY-MM.txt   # rotated 로그
+        └── claude-progress-YYYY-MM.txt
 ```
 
 ### Invariant (불변조건)
@@ -97,7 +98,7 @@ tools: Read, Write, Bash
 ```
 
 ### Generator
-`sprint_contract.md`의 완료 기준을 읽고 기능을 구현합니다. 세션 시작 시 `current_project.txt`·`claude-progress.txt`를 반드시 읽습니다.
+`.claude/stack.md`와 `sprint_contract.md`의 완료 기준을 읽고 기능을 구현합니다. 세션 시작 시 `current_project.txt`·`claude-progress.txt`를 반드시 읽습니다.
 
 ```yaml
 model: opus
@@ -106,7 +107,7 @@ permissionMode: acceptEdits
 ```
 
 ### Evaluator
-Playwright MCP로 실제 브라우저를 조작해 `sprint_contract.md` 각 항목을 검증하고 `sprint_result.json`을 기록합니다.
+`.claude/stack.md`의 개발 서버·검증 도구 설정대로 API·UI·DB를 검증하고 `sprint_result.json`을 기록합니다.
 
 ```yaml
 model: sonnet
@@ -147,6 +148,10 @@ permissionMode: plan
 cd sample
 claude
 ```
+
+### 0단계 (선택): 스택 설정
+
+`.claude/stack.md`를 열어 대상 앱의 기술 스택을 확인하고 필요하면 수정하세요. 기본값은 React 18 + Vite + TypeScript + FastAPI + SQLAlchemy + SQLite + Tailwind입니다.
 
 ### 1단계: 새 project 시작
 
@@ -208,6 +213,7 @@ claude
 
 | 파일 | 작성자 | 읽는 주체 | 수명 |
 |------|--------|-----------|------|
+| `.claude/stack.md` | 사용자 | generator, evaluator | framework 생명 주기 (프로젝트 사이에도 유지) |
 | `current_project.txt` | `/harness` 커맨드 | planner, generator, 훅 | project 시작~종료 |
 | `feature_list.json` | planner | generator | project 동안 유지 (close 시 줄어듦) |
 | `sprint_plan.md` | planner | generator | project 동안 유지 |
@@ -236,17 +242,21 @@ claude
 
 ### 다른 스택에 적용
 
-1. `agents/generator.md` — 기술 스택 섹션 수정 (React/FastAPI → 원하는 스택).
-2. `.mcp.json` — 필요한 MCP 서버 추가.
-3. `app/` 디렉토리 구조는 generator가 처음 구현 시 자율적으로 초기화.
+`.claude/stack.md`를 수정합니다. 특히 다음 섹션:
+1. **기술 스택** 표
+2. **프로젝트 구조** 트리
+3. **개발 서버** 포트·기동 명령
+4. **API 검증 도구** (evaluator가 사용)
+
+에이전트 프롬프트(agents/*.md)를 직접 수정할 필요는 없습니다.
 
 ### 루프 횟수 조정
 
-`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS` 값을 수정합니다 (기본 15).
+`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS` (기본 15).
 
 ### Rotation 임계 조정
 
-`.claude/hooks/session-end.sh`의 `MAX_LINES` 값 (기본 200).
+`.claude/hooks/session-end.sh`의 `MAX_LINES` (기본 200).
 
 ### 모델 변경
 
@@ -262,17 +272,9 @@ model: haiku   # 빠른 검증
 
 ---
 
-## 레퍼런스 project: todo-manager
+## 레퍼런스 예제
 
-`archive/sprints/todo-manager/`에 실제 완료된 5스프린트 결과물이 보관되어 있습니다. 코드는 `app/`에 남아있어 다음 project를 시작하기 전에 별도 브랜치로 이동하거나 보관을 고려하세요.
-
-- Sprint 1: 백엔드 CRUD API (feat-001~005)
-- Sprint 2: 프론트엔드 기본 UI (feat-006~010)
-- Sprint 3: 고급 편집 기능 (feat-011~014)
-- Sprint 4: AI 통합 — 카테고리·우선순위 (feat-015~018)
-- Sprint 5: 대시보드 + 배포 준비 (feat-019~022, 12개 검증 기준 전원 PASS)
-
----
+`../examples/todo-manager/`에 실제로 이 하네스로 완성된 project가 보관되어 있습니다. sprint_plan.md 구성, sprint_contract.md 작성 방식, 완료 기능의 결과물을 참고하세요.
 
 ## 관련 문서
 

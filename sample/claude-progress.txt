@@ -1,29 +1,4 @@
-  엔드포인트 추가:
-    - GET  /api/stats    → 200, {"<카테고리>": {"total": n, "completed": n}, ...}
-    - POST /api/briefing → 200, {"briefing": "<3~5문장>"} (API 실패 시 고정 폴백 문구)
-  API 검증 완료 (localhost:8000):
-    - GET /api/stats 카테고리별 total/completed 정상 반환
-    - POST /api/briefing 3~5문장 폴백 문구 정상 반환 (ANTHROPIC_API_KEY 미설정 환경)
-  프론트엔드 검증:
-    - npx tsc --noEmit 통과 (strict mode)
-    - npx vite build 성공 (142 modules transformed)
-    - 네트워크 에러 시 전역 토스트(빨간색) 자동 노출 (app:toast 이벤트 기반)
-  완료 기능: feat-019 ~ feat-022 (22/22)
-  다음 스프린트: 없음 (모든 기능 구현 완료)
-
-[2026-04-05 23:54:01] 세션 종료
-  진행: ?/? 기능 완료
-  최근 스프린트: ? (?)
-
-[2026-04-05 23:57:23] 세션 종료
-  진행: ?/? 기능 완료
-  최근 스프린트: ? (?)
-
-[2026-04-22 23:01:35] migration: todo-manager → archive/sprints/todo-manager/ 완료
-  sprint 수: 5, feature 수: 22
-  current_project.txt 비움 (project finished)
-
-[2026-04-22 23:07:39] 세션 종료
-  현재 project: (없음 — /harness로 새 project 시작)
-
-[2026-04-22 23:08:06] sprint close: test-close-sim/sprint_1 (passed 2/2)
+# 이 파일은 세션 간 컨텍스트 이월을 위한 진행 상황 로그입니다.
+# session-end.sh 훅이 자동으로 업데이트합니다.
+# generator 에이전트는 새 세션 시작 시 이 파일을 반드시 읽어야 합니다.
+# 200줄 초과 시 archive/progress/claude-progress-YYYY-MM.txt로 rotation됩니다.

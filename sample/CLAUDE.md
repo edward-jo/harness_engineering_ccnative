@@ -19,8 +19,12 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 | 에이전트 | 파일 | 역할 |
 |----------|------|------|
 | planner | `.claude/agents/planner.md` | **New**: 새 project 시작 (Sprint 1, feat-001부터) / **Extend**: max+1부터 이어서 |
-| generator | `.claude/agents/generator.md` | `sprint_contract.md` 기반 기능 구현 + git 커밋 |
-| evaluator | `.claude/agents/evaluator.md` | Playwright로 완료 기준 검증 → `sprint_result.json` 기록 |
+| generator | `.claude/agents/generator.md` | `.claude/stack.md` + `sprint_contract.md` 기반 기능 구현 + git 커밋 |
+| evaluator | `.claude/agents/evaluator.md` | `.claude/stack.md` 기반 API·UI·DB 검증 → `sprint_result.json` 기록 |
+
+## 스택 설정
+
+`.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**를 정의한다. generator와 evaluator는 세션 시작 시 이 파일을 읽어 스택을 따른다. 다른 스택으로 갈아끼우려면 이 파일만 수정하면 된다.
 
 ## 상태 파일 규칙
 
@@ -74,13 +78,11 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
 ## 개발 서버
 
-```bash
-bash app/init.sh   # 백엔드 :8000, 프론트엔드 :5173 동시 시작
-```
+`.claude/stack.md`의 "개발 서버" 섹션에 기동 방법이 정의되어 있다. 기본 stack.md는 React/FastAPI 조합을 전제로 `bash app/init.sh` (백엔드 :8000, 프론트엔드 :5173)를 명시한다.
 
 ## 중요 규칙
 
-- generator는 새 세션 시작 시 반드시 `current_project.txt` → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
+- generator는 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
 - evaluator는 검증 후 반드시 `sprint_result.json`을 기록한다 (루프 가드가 이 파일을 읽음).
 - 기능 완료 후 `feature_list.json`의 해당 항목을 `completed: true`로 업데이트한다.
 - 스프린트 PASS 후에는 반드시 `/sprint close`를 실행해 archive로 이동해야 active 파일이 bounded로 유지된다.
