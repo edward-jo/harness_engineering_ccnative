@@ -62,6 +62,65 @@ claude
 
 ---
 
+## Upgrade (이미 설치된 framework 업그레이드)
+
+설치된 리포의 framework를 최신 버전으로 업그레이드합니다. `.claude/manifest.json`의 version을 기준으로 비교합니다.
+
+```bash
+# 변경 내용 미리보기 (dry-run)
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/tools/upgrade.sh \
+  | bash -s -- --target /path/to/installed --dry-run
+
+# 실제 업그레이드
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/tools/upgrade.sh \
+  | bash -s -- --target /path/to/installed
+```
+
+### 업그레이드 정책
+
+| 분류 | 파일 | 동작 |
+|------|------|------|
+| **structural** | 훅(`hooks/*.sh`), `manifest.json`, `HARNESS.md`, `.claude/.gitignore` | **덮어쓴다** (안전하게 최신으로 교체) |
+| **customizable** | `stack.md`, `agents/*.md`, `commands/*.md`, `settings.json`, `.mcp.json` | **기존 보존 + `<파일>.new` 병렬 생성** (사용자가 수동 머지) |
+| **state** | `current_project.txt`, `feature_list.json`, `claude-progress.txt`, `archive/` | **건드리지 않음** |
+
+### 플래그
+
+| 플래그 | 설명 |
+|--------|------|
+| `--target <dir>` | 업그레이드 대상 (기본: 현재 디렉토리) |
+| `--branch <name>` | 소스 브랜치 (기본: main) |
+| `--dry-run` | 실제 파일을 건드리지 않고 변경 요약만 출력 |
+| `--force-all` | customizable 파일도 `.new` 없이 바로 덮어쓰기 (**로컬 수정 유실 주의**) |
+| `--help` | 사용법 출력 |
+
+### `.new` 파일 병합 워크플로우
+
+업그레이드 후 `.claude/`를 살펴보고 `.new` 파일을 처리하세요.
+
+```bash
+# .new 목록 확인
+find /path/to/installed/.claude -name "*.new" -o -name ".mcp.json.new"
+
+# 차이 보기
+diff /path/to/installed/.claude/stack.md /path/to/installed/.claude/stack.md.new
+
+# 선택:
+#   새 버전 채택:    mv stack.md.new stack.md
+#   기존 유지:       rm stack.md.new
+#   수동 머지:       편집 후 rm stack.md.new
+```
+
+### 동작 확인
+
+```bash
+# 이미 최신인 경우
+[upgrade] 현재: 1.0.0  →  소스: 1.0.0  (브랜치: main)
+이미 최신 버전입니다. 변경 없음.
+```
+
+---
+
 ## 사전 요구사항
 
 | 도구 | 버전 | 용도 |

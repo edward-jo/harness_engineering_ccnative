@@ -7,6 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 이 리포지토리는 **Claude Code 네이티브 방식으로 하네스(Harness)를 구현하는 방법**을 조사하고 실제로 작동하는 framework를 제공한다. Anthropic의 "Harness Design for Long-Running Apps" 아티클을 Agent SDK 없이 Claude Code 파일 기반 구성(agents, hooks, commands)으로 재현한다.
 
 > **다른 리포에 framework만 설치하려면**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash` — 상세는 [`harness_framework/README.md`](harness_framework/README.md#install-다른-리포에-설치하기) 참조.
+>
+> **이미 설치된 framework 업그레이드**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/tools/upgrade.sh | bash -s -- --target /path/to/installed [--dry-run]` — 상세는 [`harness_framework/README.md`](harness_framework/README.md#upgrade-이미-설치된-framework-업그레이드) 참조.
 
 ## 리포지토리 구조
 
@@ -25,6 +27,8 @@ examples/
     archive/sprints/todo-manager/       (스프린트별 스냅샷)
 
 install.sh                              ← 다른 리포에 framework를 설치하는 curl|bash 인스톨러
+tools/
+  upgrade.sh                            ← 설치된 framework를 최신 버전으로 업그레이드
 ```
 
 `research/` HTML은 독립 리서치 문서다. `harness_framework/`는 실제로 동작하는 framework이며, `examples/`는 그 결과물의 레퍼런스 스냅샷이다.
