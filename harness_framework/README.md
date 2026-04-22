@@ -14,15 +14,18 @@ Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으�
 다른 개발자가 자신의 리포에 이 framework를 설치하려면 한 줄로 끝납니다.
 
 ```bash
-# 현재 디렉토리에 설치
+# 현재 디렉토리에 설치 (main 브랜치)
 curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash
 
 # 특정 디렉토리에 설치
 curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash -s -- --target /path/to/my-repo
 
-# 개발 브랜치에서 설치 (main 머지 전)
-HARNESS_BRANCH=framework curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/framework/install.sh | bash
+# 개발 브랜치에서 설치 (main 머지 전) — --branch 플래그 사용 권장
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/framework/install.sh \
+  | bash -s -- --branch framework --target /tmp/curltest
 ```
+
+> **주의**: `HARNESS_BRANCH=... curl | bash` 형식은 **작동하지 않습니다**. 환경변수는 파이프 왼쪽의 `curl` 프로세스에만 전달되고 `bash`는 못 받습니다. 환경변수를 쓰려면 `export`로 먼저 내보내거나(`export HARNESS_BRANCH=framework`) 파이프 오른쪽에서 설정하세요(`curl ... | HARNESS_BRANCH=framework bash ...`). 가장 간단한 방법은 위 예시처럼 **`--branch` 플래그**를 쓰는 것입니다.
 
 ### 플래그
 
