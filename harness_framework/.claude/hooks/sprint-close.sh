@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/../.."  # sample/ 루트로 이동
+cd "$(dirname "$0")/../.."  # 하네스 루트로 이동
 
 PROGRESS_FILE="claude-progress.txt"
 

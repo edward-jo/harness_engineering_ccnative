@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-이 파일은 Claude Code가 `sample/` 디렉토리를 열었을 때 자동으로 읽는 프로젝트 가이드입니다.
+이 파일은 Claude Code가 `harness_framework/` 디렉토리를 열었을 때 자동으로 읽는 프로젝트 가이드입니다.
 
 ## 프로젝트 목적
 

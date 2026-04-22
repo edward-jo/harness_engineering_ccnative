@@ -1,6 +1,6 @@
 # Example: AI Todo Manager
 
-`sample/` 하네스로 실제 구현한 **레퍼런스 project**입니다. 하네스가 "무엇을 만들어낼 수 있는가"를 보여주는 스냅샷이며, 그 자체로는 실행 가능한 하네스 인스턴스가 아닙니다.
+`harness_framework/` 하네스로 실제 구현한 **레퍼런스 project**입니다. 하네스가 "무엇을 만들어낼 수 있는가"를 보여주는 스냅샷이며, 그 자체로는 실행 가능한 하네스 인스턴스가 아닙니다.
 
 ## 이 디렉토리 구성
 
@@ -54,7 +54,7 @@ bash app/init.sh   # 백엔드 :8000, 프론트엔드 :5173 동시 시작
 
 ## 이 예제를 참고해 새 project 만들기
 
-1. `sample/` 디렉토리를 Claude Code로 연다.
+1. `harness_framework/` 디렉토리를 Claude Code로 연다.
 2. `.claude/stack.md`를 살펴보고 필요하면 스택을 바꾼다.
 3. `/harness <아이디어>` 로 새 project 시작.
 4. `examples/todo-manager/archive/sprints/todo-manager/sprint_plan.md`에서 스프린트 분할 방식을 참고.

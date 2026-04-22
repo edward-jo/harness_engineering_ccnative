@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 이 리포지토리는 **Claude Code 네이티브 방식으로 하네스(Harness)를 구현하는 방법**을 조사하고 실제로 작동하는 framework를 제공한다. Anthropic의 "Harness Design for Long-Running Apps" 아티클을 Agent SDK 없이 Claude Code 파일 기반 구성(agents, hooks, commands)으로 재현한다.
 
+> **다른 리포에 framework만 설치하려면**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash` — 상세는 [`harness_framework/README.md`](harness_framework/README.md#install-다른-리포에-설치하기) 참조.
+
 ## 리포지토리 구조
 
 ```
@@ -13,17 +15,19 @@ research/
   harness-design-methodology.html      ← Agent SDK 기반 원본 방법론 조사 (리서치)
   harness-claude-code-native.html      ← Claude Code 네이티브 구현 방법 (리서치)
 
-sample/                                 ← 배포 대상 framework (빈 상태)
-  .claude/                              (agents, hooks, commands, stack.md)
+harness_framework/                      ← 배포 대상 framework (빈 상태)
+  .claude/                              (agents, hooks, commands, stack.md, manifest.json)
   상태 파일 (빈 것부터 시작)
 
 examples/
-  todo-manager/                         ← sample/로 완성한 레퍼런스 project (5스프린트 22 feature)
+  todo-manager/                         ← harness_framework/로 완성한 레퍼런스 project (5스프린트 22 feature)
     app/                                (generator가 만든 실제 코드)
     archive/sprints/todo-manager/       (스프린트별 스냅샷)
+
+install.sh                              ← 다른 리포에 framework를 설치하는 curl|bash 인스톨러
 ```
 
-`research/` HTML은 독립 리서치 문서다. `sample/`은 실제로 동작하는 framework이며, `examples/`는 그 결과물의 레퍼런스 스냅샷이다.
+`research/` HTML은 독립 리서치 문서다. `harness_framework/`는 실제로 동작하는 framework이며, `examples/`는 그 결과물의 레퍼런스 스냅샷이다.
 
 ## 핵심 아키텍처 개념 (문서 내용 요약)
 

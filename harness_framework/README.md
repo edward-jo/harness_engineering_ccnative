@@ -1,4 +1,4 @@
-# Claude Code 하네스 샘플 (framework)
+# Claude Code 하네스 (framework)
 
 Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework입니다.
 Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으로 Planner → Generator → Evaluator 루프를 구현합니다.
@@ -6,6 +6,56 @@ Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으�
 하나의 리포에서 **여러 독립 아이디어(project)**를 순차적으로 진행할 수 있으며, 각 project는 자체 Sprint 번호 공간을 갖고 `archive/sprints/<slug>/`에 영구 보관됩니다.
 
 > **실제 결과물 예시**: `../examples/todo-manager/`에 5스프린트 22 feature가 완료된 레퍼런스 project가 보관되어 있습니다.
+
+---
+
+## Install (다른 리포에 설치하기)
+
+다른 개발자가 자신의 리포에 이 framework를 설치하려면 한 줄로 끝납니다.
+
+```bash
+# 현재 디렉토리에 설치
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash
+
+# 특정 디렉토리에 설치
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash -s -- --target /path/to/my-repo
+
+# 개발 브랜치에서 설치 (main 머지 전)
+HARNESS_BRANCH=framework curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/framework/install.sh | bash
+```
+
+### 플래그
+
+| 플래그 | 환경변수 | 기본값 | 설명 |
+|--------|----------|--------|------|
+| `--target <dir>` | — | `.` | 설치 대상 디렉토리 |
+| `--branch <name>` | `HARNESS_BRANCH` | `main` | 소스 브랜치 |
+| `--force` | — | off | 기존 `.claude/`를 덮어쓴다 (상태 파일은 항상 보존) |
+| `--help` | — | — | 사용법 출력 |
+| — | `HARNESS_REPO` | `edward-jo/harness_engineering_ccnative` | GitHub owner/repo |
+| — | `LOCAL_SOURCE` | — | 로컬 소스 경로 (개발·테스트용) |
+
+### 설치 내용
+
+프레임워크 파일 (버전 고정):
+- `.claude/agents/`, `.claude/commands/`, `.claude/hooks/`
+- `.claude/stack.md`, `.claude/settings.json`, `.claude/manifest.json`, `.claude/HARNESS.md`
+- `.mcp.json`
+
+상태 스캐폴드 (기존 파일이 있으면 **건드리지 않음**):
+- `current_project.txt` (빈 파일)
+- `feature_list.json` → `[]`
+- `claude-progress.txt` (헤더)
+
+설치 후 `.claude/manifest.json`의 `version` 필드가 박제되며, 추후 업그레이드 도구가 이 값을 참조합니다.
+
+### 설치 후
+
+```bash
+cd /path/to/installed/dir
+claude
+/harness <아이디어>
+```
 
 ---
 
@@ -43,7 +93,7 @@ Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으�
 ## 디렉토리 구조
 
 ```
-sample/
+harness_framework/
 ├── .claude/
 │   ├── settings.json              # 훅 설정 (Stop, PostToolUse)
 │   ├── stack.md                   # 대상 스택 정의 (사용자 편집 가능)
@@ -145,7 +195,7 @@ permissionMode: plan
 ## 빠른 시작
 
 ```bash
-cd sample
+cd harness_framework
 claude
 ```
 

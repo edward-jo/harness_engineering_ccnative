@@ -1,0 +1,29 @@
+{
+  "name": "claude-code-harness",
+  "version": "1.0.0",
+  "released": "2026-04-23",
+  "source": "https://github.com/edward-jo/harness_engineering_ccnative",
+  "files": {
+    "framework": [
+      ".claude/agents/planner.md",
+      ".claude/agents/generator.md",
+      ".claude/agents/evaluator.md",
+      ".claude/commands/harness.md",
+      ".claude/commands/sprint.md",
+      ".claude/hooks/loop-guard.sh",
+      ".claude/hooks/progress-update.sh",
+      ".claude/hooks/session-end.sh",
+      ".claude/hooks/sprint-close.sh",
+      ".claude/stack.md",
+      ".claude/settings.json",
+      ".claude/manifest.json",
+      ".claude/HARNESS.md",
+      ".mcp.json"
+    ],
+    "state_scaffold": [
+      "current_project.txt",
+      "feature_list.json",
+      "claude-progress.txt"
+    ]
+  }
+}

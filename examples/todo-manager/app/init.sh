@@ -2,7 +2,7 @@
 # 개발 서버 시작 스크립트
 # generator 에이전트가 구현 전 이 스크립트로 서버를 시작합니다.
 #
-# 실행 위치: 프로젝트 루트(sample/)
+# 실행 위치: 프로젝트 루트 (examples/todo-manager/ 또는 설치된 대상 리포 루트)
 #   - 백엔드는 `uvicorn app.backend.main:app` 패키지 경로로 기동
 #   - 프론트엔드는 app/frontend/에서 Vite 개발 서버 기동
 
