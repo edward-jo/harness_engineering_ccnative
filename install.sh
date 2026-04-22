@@ -132,6 +132,9 @@ cp -R "$SRC/.claude/hooks"    "$TARGET_ABS/.claude/hooks"
 cp    "$SRC/.claude/stack.md"       "$TARGET_ABS/.claude/stack.md"
 cp    "$SRC/.claude/settings.json"  "$TARGET_ABS/.claude/settings.json"
 cp    "$SRC/.claude/manifest.json"  "$TARGET_ABS/.claude/manifest.json"
+if [ -f "$SRC/.claude/.gitignore" ]; then
+  cp  "$SRC/.claude/.gitignore"     "$TARGET_ABS/.claude/.gitignore"
+fi
 # settings.local.json 은 user별 파일이므로 복사하지 않음
 # HARNESS 가이드: harness_framework/CLAUDE.md → target/.claude/HARNESS.md (사용자의 CLAUDE.md 보호)
 cp    "$SRC/CLAUDE.md"              "$TARGET_ABS/.claude/HARNESS.md"

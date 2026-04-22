@@ -17,6 +17,7 @@
       ".claude/stack.md",
       ".claude/settings.json",
       ".claude/manifest.json",
+      ".claude/.gitignore",
       ".claude/HARNESS.md",
       ".mcp.json"
     ],
