@@ -210,6 +210,22 @@ model: opus
 tools: Read, Write, Bash
 ```
 
+#### 계획 품질 보강 (대화형 refine)
+
+`/harness`가 생성한 `sprint_plan.md`가 얕거나 모호하면, 전용 커맨드 없이 **같은 세션에서 planner를 다시 호출해 보강 지시**할 수 있습니다. planner는 기존 `sprint_plan.md`와 `feature_list.json`을 그 자리에서 읽고 확장·수정합니다.
+
+예시 프롬프트:
+
+```
+planner 에이전트로 sprint_plan.md를 다시 읽고 다음 관점으로 보강해:
+- 각 스프린트마다 검증 가능한 완료 기준을 bullet 최소 5개로 명시 (모호한 "잘 동작한다" 금지)
+- 각 기능에 구체적 API 엔드포인트·UI 컴포넌트·DB 모델 이름 제시
+- 스프린트별 리스크·가정·대안 섹션 추가
+- AI 통합 지점은 폴백 동작을 명시
+```
+
+품질 보강이 반복적으로 필요하다면 `harness_framework/.claude/agents/planner.md` 끝에 **self-check rubric**을 추가해 매번 자동 검증되게 할 수도 있습니다 (이 파일은 upgrade 정책상 customizable이라 로컬 수정이 유실되지 않음).
+
 ### Generator
 `.claude/stack.md`와 `sprint_contract.md`의 완료 기준을 읽고 기능을 구현합니다. 세션 시작 시 `current_project.txt`·`claude-progress.txt`를 반드시 읽습니다.
 
