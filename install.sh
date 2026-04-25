@@ -125,10 +125,12 @@ fi
 
 # ---- 프레임워크 파일 복사 ----
 echo "[install] 프레임워크 파일 복사 → $TARGET_ABS/.claude/"
-mkdir -p "$TARGET_ABS/.claude"
-cp -R "$SRC/.claude/agents"   "$TARGET_ABS/.claude/agents"
-cp -R "$SRC/.claude/commands" "$TARGET_ABS/.claude/commands"
-cp -R "$SRC/.claude/hooks"    "$TARGET_ABS/.claude/hooks"
+mkdir -p "$TARGET_ABS/.claude/agents" "$TARGET_ABS/.claude/commands" "$TARGET_ABS/.claude/hooks"
+# `src/.` 형식: dest가 이미 있어도 src 디렉토리가 dest **안에** 중첩되지 않고 내용만 머지된다.
+# 동명 파일은 덮어쓰되, 사용자가 추가한 커스텀 파일은 보존된다.
+cp -R "$SRC/.claude/agents/."   "$TARGET_ABS/.claude/agents/"
+cp -R "$SRC/.claude/commands/." "$TARGET_ABS/.claude/commands/"
+cp -R "$SRC/.claude/hooks/."    "$TARGET_ABS/.claude/hooks/"
 cp    "$SRC/.claude/stack.md"       "$TARGET_ABS/.claude/stack.md"
 cp    "$SRC/.claude/settings.json"  "$TARGET_ABS/.claude/settings.json"
 cp    "$SRC/.claude/manifest.json"  "$TARGET_ABS/.claude/manifest.json"
