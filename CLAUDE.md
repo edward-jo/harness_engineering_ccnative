@@ -37,18 +37,22 @@ tools/
 
 ## 핵심 아키텍처 개념 (문서 내용 요약)
 
-### 3단계 에이전트 구조
+### 에이전트 구조
 - **Planner**: 1~4문장 아이디어 → `feature_list.json` + `sprint_plan.md` 생성
 - **Generator**: 스프린트 계약(`sprint_contract.md`) 기반 기능 구현, 완료 후 git 커밋
-- **Evaluator**: Playwright MCP로 `sprint_contract.md` 기준 항목 검증, `sprint_result.json` 기록
+- **QA (test-builder · risk-reviewer · production-guard)**: 단일 evaluator를 v1.2.0에서 세 역할로 확장. 회귀 자산 작성·완료 기준 검증(test-builder), 누락 시나리오·릴리스 리스크(risk-reviewer), 부하·보안·릴리스 게이트(production-guard). 세 에이전트는 모두 Sprint 모드와 PR 모드를 가짐.
+
+> 원본 리서치는 단일 Evaluator 기준이다. `harness_framework/`는 실 운영 관점에서 Evaluator를 분리·확장했다.
 
 ### 상태 파일 (에이전트 간 통신 매개체)
 | 파일 | 역할 |
 |------|------|
 | `feature_list.json` | 200+ 기능 목록 + `completed` 여부 |
-| `sprint_contract.md` | Generator ↔ Evaluator 간 완료 기준 합의 |
+| `sprint_contract.md` | Generator ↔ QA 에이전트 간 완료 기준 합의 |
 | `claude-progress.txt` | 세션 간 진행 상황 이월 |
-| `sprint_result.json` | Evaluator가 기록하는 PASS/FAIL 결과 |
+| `sprint_result.json` | test-builder(Sprint 모드)가 기록하는 PASS/FAIL 결과 (루트, hot path) |
+| `sprint_review_result.json` / `sprint_guard_result.json` | risk-reviewer / production-guard Sprint 모드 결과 (루트) |
+| `pr_*_result_<diff_ref>.json` | `/qa` PR 모드 산출물 (루트, close 시 archive 동반) |
 
 ### Claude Code 네이티브 구성 요소
 - **에이전트**: `.claude/agents/*.md` (YAML 프론트매터 + 시스템 프롬프트)
@@ -57,8 +61,8 @@ tools/
 - **MCP 서버**: `.mcp.json`
 
 ### 루프 구현 방식 3가지
-1. **Stop 훅 기반**: `sprint_result.json`의 `status=FAIL`이면 `decision: "block"` 반환 → Claude 재실행
-2. **코디네이터 에이전트**: `coordinator.md`가 Generator → Evaluator 루프를 `maxTurns` 제한 하에 자율 반복
+1. **Stop 훅 기반**: 루트 `sprint_result.json`의 `status=FAIL`이면 `decision: "block"` 반환 → Claude 재실행 (`harness_framework/`가 채택한 방식, test-builder가 PASS할 때까지 generator → test-builder 반복)
+2. **코디네이터 에이전트**: `coordinator.md`가 Generator → Evaluator 루프를 `maxTurns` 제한 하에 자율 반복 (원본 리서치 옵션, 본 framework는 미채택)
 3. **design-loop 에이전트**: 프론트엔드 UI를 5~15회 반복 개선, 점수 ≥ 80 또는 최대 횟수 도달 시 종료
 
 ### 모델별 하네스 단순화 전략

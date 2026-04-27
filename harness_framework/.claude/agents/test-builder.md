@@ -92,9 +92,9 @@ color: cyan
 총계: 2/3 통과 / 신규 회귀 자산: 2개
 ```
 
-**`archive/sprints/<slug>/sprint_N/sprint_result.json` (필수, evaluator 포맷 호환):**
+**루트 `sprint_result.json` (필수, evaluator 포맷 호환):**
 
-저장 경로는 `current_project.txt`의 slug와 현재 sprint 번호로 결정한다. 예: `archive/sprints/todo-manager/sprint_1/sprint_result.json`. 디렉터리가 없으면 생성한다.
+active sprint의 hot path 파일이므로 **루트 디렉터리**에 쓴다 (`harness_framework/sprint_result.json`). `loop-guard.sh`(Stop 훅)와 `sprint-close.sh`가 이 위치를 읽으며, `/sprint close` 시점에 sprint-close.sh가 `archive/sprints/<slug>/sprint_N/result.json`으로 이동시킨다. **archive 경로에 직접 쓰지 않는다.**
 
 ```json
 {
@@ -152,9 +152,9 @@ PR 테스트 자산 생성 결과
 커버리지 노트: ...
 ```
 
-**`archive/sprints/<slug>/sprint_N/pr_test_result.json`:**
+**루트 `pr_test_result_<diff_ref>.json`:**
 
-PR 모드도 현재 active sprint 디렉터리 하위에 저장한다. 동일 sprint 내 여러 PR이 있는 경우 `pr_test_result_<diff_ref>.json` 형태로 구분한다.
+PR 결과도 **루트 디렉터리**에 저장한다 (`harness_framework/pr_test_result_<diff_ref>.json`). `<diff_ref>`는 안전한 슬러그(영숫자·하이픈·언더스코어)로 정규화한다. `/sprint close` 시점에 sprint-close.sh가 함께 archive로 이동시킨다.
 
 ```json
 {

@@ -88,9 +88,9 @@ color: red
 보안: Critical 0건, High 0건, Medium 1건
 ```
 
-**`archive/sprints/<slug>/sprint_N/sprint_guard_result.json`:**
+**루트 `sprint_guard_result.json`:**
 
-저장 경로는 `current_project.txt`의 slug와 현재 sprint 번호로 결정한다. 디렉터리가 없으면 생성한다.
+active sprint의 hot path 파일이므로 **루트 디렉터리**에 쓴다. `/sprint close` 시점에 sprint-close.sh가 `archive/sprints/<slug>/sprint_N/sprint_guard_result.json`로 이동시킨다. **archive 경로에 직접 쓰지 않는다.**
 
 ```json
 {
@@ -145,8 +145,8 @@ SKIP 시:
 2. 변경이 핵심 경로에 영향을 주는지 판단.
 3. 해당 시 부하·보안 검증 수행.
 
-### 산출물 (`archive/sprints/<slug>/sprint_N/pr_guard_result.json`)
-Sprint 모드와 동일 구조이며 `sprint` 대신 `diff_ref` 필드 사용. 동일 sprint 내 여러 PR은 `pr_guard_result_<diff_ref>.json`으로 구분.
+### 산출물 (루트 `pr_guard_result_<diff_ref>.json`)
+PR 결과도 **루트 디렉터리**에 저장. Sprint 모드와 동일 구조이며 `sprint` 대신 `diff_ref` 필드 사용. `<diff_ref>`는 안전한 슬러그로 정규화한다. `/sprint close` 시점에 sprint-close.sh가 함께 archive로 이동시킨다.
 
 ---
 

@@ -100,9 +100,9 @@ color: yellow
 수동 QA 필요: 2건
 ```
 
-**`archive/sprints/<slug>/sprint_N/sprint_review_result.json`:**
+**루트 `sprint_review_result.json`:**
 
-저장 경로는 `current_project.txt`의 slug와 현재 sprint 번호로 결정한다. 디렉터리가 없으면 생성한다.
+active sprint의 hot path 파일이므로 **루트 디렉터리**에 쓴다. `/sprint close` 시점에 sprint-close.sh가 `archive/sprints/<slug>/sprint_N/sprint_review_result.json`로 이동시킨다. **archive 경로에 직접 쓰지 않는다.**
 
 ```json
 {
@@ -137,9 +137,9 @@ color: yellow
 
 ### 산출물
 
-**`archive/sprints/<slug>/sprint_N/pr_review_result.json`:**
+**루트 `pr_review_result_<diff_ref>.json`:**
 
-현재 active sprint 디렉터리 하위에 저장. 동일 sprint 내 여러 PR이 있는 경우 `pr_review_result_<diff_ref>.json` 형태로 구분.
+PR 결과도 **루트 디렉터리**에 저장한다. `<diff_ref>`는 안전한 슬러그(영숫자·하이픈·언더스코어)로 정규화한다. `/sprint close` 시점에 sprint-close.sh가 함께 archive로 이동시킨다.
 
 ```json
 {

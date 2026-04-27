@@ -1,7 +1,7 @@
 # Claude Code 하네스 (framework)
 
 Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework입니다.
-Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으로 Planner → Generator → Evaluator 루프를 구현합니다.
+Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으로 Planner → Generator → QA(test-builder · risk-reviewer · production-guard) 루프를 구현합니다.
 
 하나의 리포에서 **여러 독립 아이디어(project)**를 순차적으로 진행할 수 있으며, 각 project는 자체 Sprint 번호 공간을 갖고 `archive/sprints/<slug>/`에 영구 보관됩니다.
 
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 
 프레임워크 파일 (버전 고정):
 - `.claude/agents/`, `.claude/commands/`, `.claude/hooks/`
-- `.claude/stack.md`, `.claude/settings.json`, `.claude/manifest.json`, `.claude/HARNESS.md`
+- `.claude/stack.md`, `.claude/qa.md.template`, `.claude/settings.json`, `.claude/manifest.json`, `.claude/HARNESS.md`
 - `.mcp.json`
 
 상태 스캐폴드 (기존 파일이 있으면 **건드리지 않음**):
@@ -146,10 +146,17 @@ diff /path/to/installed/.claude/stack.md /path/to/installed/.claude/stack.md.new
 
 ### Stack
 
-- `.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**를 정의합니다.
-- `generator`와 `evaluator` 에이전트가 세션 시작 시 이 파일을 읽어 스택을 따릅니다.
+- `.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**(스택 사실)를 정의합니다.
+- `generator`와 QA 에이전트(`test-builder`, `risk-reviewer`, `production-guard`)가 세션 시작 시 이 파일을 읽어 스택을 따릅니다.
 - 다른 스택으로 갈아끼우려면 이 파일만 수정하면 됩니다. 에이전트 프롬프트를 건드릴 필요 없음.
 - **Ready-made 템플릿**: [`examples/stack-templates/`](../examples/stack-templates/)에 React+FastAPI, Next.js+Prisma, Django+HTMX, Go+HTMX 등 바로 복사해 쓸 수 있는 `stack.md` 템플릿이 있습니다.
+
+### QA 정책 (qa.md)
+
+- `.claude/qa.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의합니다 (스택 사실은 stack.md, 정책·도메인은 qa.md로 책임 분리).
+- QA 에이전트(`test-builder`, `risk-reviewer`, `production-guard`)만 참조합니다. generator/planner는 읽지 않습니다.
+- 두 파일이 충돌하면 stack.md(스택 사실)를 우선합니다.
+- 시작: `cp .claude/qa.md.template .claude/qa.md` 후 도메인 정보를 채우세요. QA 에이전트는 비어있는 항목에 추측으로 진행하지 않습니다(미정인 항목은 "미정" 또는 "해당 없음"으로 명시).
 
 ---
 
@@ -160,24 +167,34 @@ harness_framework/
 ├── .claude/
 │   ├── settings.json              # 훅 설정 (Stop, PostToolUse)
 │   ├── stack.md                   # 대상 스택 정의 (사용자 편집 가능)
+│   ├── qa.md.template             # QA 정책·도메인 컨텍스트 템플릿 (cp 후 qa.md로 사용)
 │   ├── agents/
 │   │   ├── planner.md             # 기획자: new/extend 두 모드
 │   │   ├── generator.md           # 구현자: stack.md 기반으로 코딩
-│   │   └── evaluator.md           # 검증자: stack.md 기반 QA
+│   │   ├── test-builder.md        # QA: 회귀 자산 + sprint 완료 기준 검증 (Sprint/PR 모드)
+│   │   ├── risk-reviewer.md       # QA: 누락 시나리오·장애 모드·릴리스 리스크 (Sprint/PR 모드)
+│   │   └── production-guard.md    # QA: 부하·보안·릴리스 게이트 (Sprint/PR 모드)
 │   ├── hooks/
 │   │   ├── loop-guard.sh          # Stop 훅: FAIL 감지 시 루프 재실행
 │   │   ├── progress-update.sh     # PostToolUse: git commit 감지 로그
 │   │   ├── session-end.sh         # Stop: 세션 종료 로그 + rotation
-│   │   └── sprint-close.sh        # /sprint close 헬퍼 (archive 이동)
+│   │   └── sprint-close.sh        # /sprint close 헬퍼 (archive 이동, QA 산출물 동반)
 │   └── commands/
-│       ├── harness.md             # /harness 슬래시 커맨드 (new/extend/finish/list)
-│       └── sprint.md              # /sprint 슬래시 커맨드 (숫자/review/loop/close/status)
+│       ├── harness.md             # /harness 슬래시 커맨드 (new/extend/finish/list/abandon)
+│       ├── sprint.md              # /sprint 슬래시 커맨드 (숫자/review/loop/close/status)
+│       └── qa.md                  # /qa 슬래시 커맨드 (PR/diff 단위 test/review/guard/all)
 ├── .mcp.json                      # Playwright MCP 서버 설정
 ├── current_project.txt            # 현재 active project slug (빈 문자열이면 없음)
 ├── feature_list.json              # 현재 active project의 open/현재 sprint 항목만
 ├── sprint_plan.md                 # 현재 project의 계획 (active일 때만 존재)
 ├── sprint_contract.md             # 현재 sprint 완료 기준 (작업 중에만 존재)
-├── sprint_result.json             # 현재 sprint 검증 결과 (close 후 archive로 이동)
+├── sprint_result.json             # test-builder(Sprint 모드) 산출물, 루프 가드가 읽음 (close 시 archive로 이동)
+├── sprint_review_result.json      # risk-reviewer(Sprint 모드) 산출물 (close 시 archive로 이동)
+├── sprint_guard_result.json       # production-guard(Sprint 모드) 산출물 (close 시 archive로 이동)
+├── pr_test_result_*.json          # /qa test PR 결과 (close 시 archive로 이동)
+├── pr_review_result_*.json        # /qa review PR 결과 (close 시 archive로 이동)
+├── pr_guard_result_*.json         # /qa guard PR 결과 (close 시 archive로 이동)
+├── qa.md                          # QA 정책·도메인 컨텍스트 (사용자가 template 복사 후 채움)
 ├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
 └── archive/                       # project 아카이브 (처음엔 없음, /sprint close 시 생성)
     ├── sprints/<project-slug>/
@@ -235,15 +252,17 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 permissionMode: acceptEdits
 ```
 
-### Evaluator
-`.claude/stack.md`의 개발 서버·검증 도구 설정대로 API·UI·DB를 검증하고 `sprint_result.json`을 기록합니다.
+### QA — 세 에이전트로 분리
 
-```yaml
-model: sonnet
-mcpServers:
-  playwright: { type: stdio, command: npx, args: ["-y", "@playwright/mcp@latest"] }
-permissionMode: plan
-```
+evaluator는 v1.2.0에서 세 QA 에이전트로 확장되었습니다. 각 에이전트는 **Sprint 모드**(현재 sprint 검증)와 **PR 모드**(diff 단위 검증)로 동작하며, `.claude/stack.md`와 `.claude/qa.md` 두 파일을 함께 읽습니다. 산출물은 active 동안 모두 **루트 디렉터리**에 기록되고, `/sprint close` 시 archive로 동반 이동됩니다.
+
+| 에이전트 | 역할 | Sprint 모드 산출물 | PR 모드 산출물 | 모델·권한 |
+|----------|------|-------------------|---------------|-----------|
+| `test-builder` | 완료 기준 검증 + 회귀 자산(단위·통합·API·E2E) 작성 | `sprint_result.json` | `pr_test_result_<diff_ref>.json` | sonnet, `acceptEdits` |
+| `risk-reviewer` | 누락 시나리오·장애 모드·컴플라이언스·리스크 등급 | `sprint_review_result.json` | `pr_review_result_<diff_ref>.json` | sonnet, `plan` |
+| `production-guard` | 핵심 경로 변경 시 부하·보안·릴리스 게이트(GO/SKIP/NO-GO) | `sprint_guard_result.json` | `pr_guard_result_<diff_ref>.json` | sonnet, `acceptEdits` |
+
+`/sprint review`는 위 셋을 순서대로 실행하며 단계별 중단 조건이 있습니다. `/qa <test|review|guard|all> <diff_ref>`는 PR 모드를 직접 호출합니다.
 
 ---
 
@@ -255,18 +274,18 @@ permissionMode: plan
          ▼
 [generator] 스프린트 1 구현
          │
-[evaluator] 검증 → sprint_result.json 기록
+[test-builder Sprint 모드] 검증 → 루트 sprint_result.json 기록
          │
 [Stop 훅: loop-guard.sh 자동 실행]
          │
-         ├─ status = "FAIL" AND 횟수 < 15
+         ├─ status = "FAIL" AND 횟수 < 5
          │     → decision: "block" 반환 → Claude 재실행
          │     → [generator] 실패 항목 수정
-         │     → [evaluator] 재검증 → Stop 훅 반복
+         │     → [test-builder] 재검증 → Stop 훅 반복
          │
-         └─ status = "PASS" 또는 횟수 >= 15
+         └─ status = "PASS" 또는 횟수 >= 5
                → exit 0 → 정상 종료
-               → 사용자에게 `/sprint close` 안내
+               → 사용자에게 `/sprint review` 잔여 단계(risk-reviewer/production-guard)와 `/sprint close` 안내
 ```
 
 ---
@@ -295,9 +314,9 @@ claude
 
 ```
 /sprint 1            # generator로 구현
-/sprint review       # evaluator로 검증
-/sprint loop 1       # 자동 루프 (PASS까지)
-/sprint close        # PASS 후 archive로 이동
+/sprint review       # QA 파이프라인(test-builder → risk-reviewer → production-guard)
+/sprint loop 1       # 자동 루프 (test-builder PASS까지)
+/sprint close        # 가드 통과 시 archive로 이동 (QA 산출물 동반)
 ```
 
 ### 3단계: 다음 스프린트 또는 전체 자동
@@ -332,11 +351,15 @@ claude
 | `/harness abandon` | 실패·중단된 project를 `archive/sprints/<slug>-abandoned-<ts>/`로 이동 (같은 slug 재사용 가능) |
 | `/harness list` | archive + active project 나열 (finished / abandoned 구분) |
 | `/sprint [숫자]` | generator로 해당 스프린트 구현 |
-| `/sprint review` | evaluator로 현재 스프린트 검증 |
-| `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 (단일 스프린트) |
-| `/sprint loop all` | 모든 미완료 스프린트 자동 순차 구현 |
-| `/sprint close` | PASS된 현재 스프린트를 archive로 이동 |
+| `/sprint review` | QA 파이프라인(test-builder → risk-reviewer → production-guard) 실행 |
+| `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 (단일 스프린트, test-builder PASS까지) |
+| `/sprint loop all` | 모든 미완료 스프린트 자동 순차 구현 (test-builder만 자동) |
+| `/sprint close` | 가드 통과 시 현재 스프린트를 archive로 이동 (QA 산출물 동반) |
 | `/sprint status` | 현재 project의 active + archived 진행 상황 |
+| `/qa test <diff_ref>` | test-builder PR 모드 — 회귀 자산 작성 |
+| `/qa review <diff_ref>` | risk-reviewer PR 모드 — 리스크 식별 |
+| `/qa guard <diff_ref>` | production-guard PR 모드 — 부하·보안 |
+| `/qa all <diff_ref>` | 위 셋을 순차 실행 |
 
 ---
 
@@ -344,28 +367,36 @@ claude
 
 | 파일 | 작성자 | 읽는 주체 | 수명 |
 |------|--------|-----------|------|
-| `.claude/stack.md` | 사용자 | generator, evaluator | framework 생명 주기 (프로젝트 사이에도 유지) |
-| `current_project.txt` | `/harness` 커맨드 | planner, generator, 훅 | project 시작~종료 |
-| `feature_list.json` | planner | generator | project 동안 유지 (close 시 줄어듦) |
+| `.claude/stack.md` | 사용자 | generator, QA 3종 | framework 생명 주기 (프로젝트 사이에도 유지) |
+| `.claude/qa.md` | 사용자 (`qa.md.template`에서 복사) | QA 3종 | framework 생명 주기 |
+| `current_project.txt` | `/harness` 커맨드 | planner, generator, QA 3종, 훅 | project 시작~종료 |
+| `feature_list.json` | planner | generator, QA 3종 | project 동안 유지 (close 시 줄어듦) |
 | `sprint_plan.md` | planner | generator | project 동안 유지 |
-| `sprint_contract.md` | generator | evaluator | sprint 시작~close |
-| `sprint_result.json` | evaluator | loop-guard.sh | sprint review~close |
+| `sprint_contract.md` | generator | test-builder, risk-reviewer, production-guard | sprint 시작~close |
+| `sprint_result.json` | test-builder (Sprint 모드) | loop-guard.sh, sprint-close.sh, risk-reviewer | sprint review~close |
+| `sprint_review_result.json` | risk-reviewer (Sprint 모드) | sprint-close.sh | sprint review~close |
+| `sprint_guard_result.json` | production-guard (Sprint 모드) | sprint-close.sh | sprint review~close |
+| `pr_*_result_<diff_ref>.json` | QA PR 모드 (`/qa`) | sprint-close.sh | sprint 동안 누적, close 시 archive로 이동 |
 | `claude-progress.txt` | session-end.sh | generator | 지속 (rotation 적용) |
-| `archive/sprints/<slug>/INDEX.json` | sprint-close.sh | `/sprint status` | project 영속 |
+| `archive/sprints/<slug>/INDEX.json` | sprint-close.sh | `/sprint status` | project 영속 (각 항목에 `risk_grade`·`release_readiness` 포함) |
 | `archive/sprints/<slug>/META.json` | `/harness finish`, sprint-close.sh | `/harness list` | project 영속 |
 
-### sprint_result.json 포맷
+### sprint_result.json 포맷 (test-builder Sprint 모드)
 
 ```json
 // PASS 시
-{ "status": "PASS", "sprint": 1, "passed": 12, "total": 12, "failures": [] }
+{ "status": "PASS", "sprint": 1, "passed": 12, "total": 12, "failures": [],
+  "regression_assets_added": ["tests/api/todos.spec.ts"], "manual_qa_required": [] }
 
 // FAIL 시
 { "status": "FAIL", "sprint": 1, "passed": 10, "total": 12,
-  "failures": ["완료 체크박스 클릭 시 UI 미업데이트", "DELETE 404 처리 누락"] }
+  "failures": ["완료 체크박스 클릭 시 UI 미업데이트", "DELETE 404 처리 누락"],
+  "regression_assets_added": [], "manual_qa_required": [] }
 
 // 선택 필드: "note" (long-form 검증 상세) — 루프 가드는 읽지 않음
 ```
+
+`sprint_review_result.json`(`risk_grade`, `missing_scenarios`, `recommended_tests`, `manual_qa_required`, ...)와 `sprint_guard_result.json`(`release_readiness`, `core_paths_changed`, `performance`, `security`, ...)의 상세 스키마는 각 에이전트 정의(`.claude/agents/risk-reviewer.md`, `.claude/agents/production-guard.md`)에 있습니다.
 
 ---
 
@@ -377,13 +408,13 @@ claude
 1. **기술 스택** 표
 2. **프로젝트 구조** 트리
 3. **개발 서버** 포트·기동 명령
-4. **API 검증 도구** (evaluator가 사용)
+4. **API 검증 도구** (test-builder가 사용)
 
 에이전트 프롬프트(agents/*.md)를 직접 수정할 필요는 없습니다.
 
 ### 루프 횟수 조정
 
-`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS` (기본 15).
+`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS` (기본 5).
 
 ### Rotation 임계 조정
 
