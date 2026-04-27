@@ -1,9 +1,10 @@
 {
   "name": "claude-code-harness",
-  "version": "1.1.0",
-  "released": "2026-04-23",
+  "version": "1.2.0",
+  "released": "2026-04-27",
   "source": "https://github.com/edward-jo/harness_engineering_ccnative",
   "changelog": {
+    "1.2.0": "evaluator를 QA 3종(test-builder, risk-reviewer, production-guard)으로 확장. /sprint review를 QA 파이프라인으로 갱신. /sprint close 가드 강화(risk_grade=High / release_readiness=NO-GO 차단). /qa 슬래시 커맨드 신설(PR/diff 단위). qa.md.template 추가(QA 정책·도메인 컨텍스트 분리).",
     "1.1.0": "/harness abandon 커맨드 추가 — 실패·중단 project를 archive/sprints/<slug>-abandoned-<ts>/로 버리고 같은 slug 재사용 가능. project-abandon.sh 헬퍼 신규.",
     "1.0.0": "첫 릴리스: project 격리·stack 추상화·bounded state·install.sh·manifest·upgrade.sh."
   },
@@ -11,15 +12,19 @@
     "framework": [
       ".claude/agents/planner.md",
       ".claude/agents/generator.md",
-      ".claude/agents/evaluator.md",
+      ".claude/agents/test-builder.md",
+      ".claude/agents/risk-reviewer.md",
+      ".claude/agents/production-guard.md",
       ".claude/commands/harness.md",
       ".claude/commands/sprint.md",
+      ".claude/commands/qa.md",
       ".claude/hooks/loop-guard.sh",
       ".claude/hooks/progress-update.sh",
       ".claude/hooks/session-end.sh",
       ".claude/hooks/sprint-close.sh",
       ".claude/hooks/project-abandon.sh",
       ".claude/stack.md",
+      ".claude/qa.md.template",
       ".claude/settings.json",
       ".claude/manifest.json",
       ".claude/.gitignore",

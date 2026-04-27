@@ -4,7 +4,7 @@
 
 ## 프로젝트 목적
 
-Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘플**. Planner → Generator → Evaluator 구조로 스프린트 단위 개발을 자동화한다. 하나의 리포에서 여러 독립 아이디어(**project**)를 순차 진행할 수 있다.
+Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘플**. Planner → Generator → QA(test-builder · risk-reviewer · production-guard) 구조로 스프린트 단위 개발을 자동화한다. 하나의 리포에서 여러 독립 아이디어(**project**)를 순차 진행할 수 있다.
 
 ## 핵심 개념: Project
 
@@ -20,11 +20,15 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 |----------|------|------|
 | planner | `.claude/agents/planner.md` | **New**: 새 project 시작 (Sprint 1, feat-001부터) / **Extend**: max+1부터 이어서 |
 | generator | `.claude/agents/generator.md` | `.claude/stack.md` + `sprint_contract.md` 기반 기능 구현 + git 커밋 |
-| evaluator | `.claude/agents/evaluator.md` | `.claude/stack.md` 기반 API·UI·DB 검증 → `sprint_result.json` 기록 |
+| test-builder | `.claude/agents/test-builder.md` | Sprint/PR 모드. 완료 기준 검증 + 회귀 자산(단위·통합·API·E2E). `sprint_result.json` / `pr_test_result_*.json` 기록 |
+| risk-reviewer | `.claude/agents/risk-reviewer.md` | Sprint/PR 모드. 누락 시나리오·장애 모드·컴플라이언스. `sprint_review_result.json` / `pr_review_result_*.json` 기록 |
+| production-guard | `.claude/agents/production-guard.md` | Sprint/PR 모드. 부하·보안·릴리스 게이트. `sprint_guard_result.json` / `pr_guard_result_*.json` 기록 |
 
-## 스택 설정
+## 스택 / QA 설정
 
-`.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**를 정의한다. generator와 evaluator는 세션 시작 시 이 파일을 읽어 스택을 따른다. 다른 스택으로 갈아끼우려면 이 파일만 수정하면 된다.
+`.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**(스택 사실)를 정의한다. generator와 QA 3종은 세션 시작 시 이 파일을 읽어 스택을 따른다.
+
+`.claude/qa.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). `.claude/qa.md.template`을 복사해 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
 
 ## 상태 파일 규칙
 
@@ -36,7 +40,10 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 | `feature_list.json` | planner (+generator) | 현재 active project의 **open/현재 sprint 항목만**. close 시 줄어듦. |
 | `sprint_plan.md` | planner | 현재 project의 현재 계획. 첫 줄 `<!-- project: <slug> -->` 마커. |
 | `sprint_contract.md` | generator | 스프린트 시작 전 완료 기준 먼저 작성. close 시 archive로 이동. |
-| `sprint_result.json` | evaluator | 반드시 `status, sprint, passed, total, failures` 포함. `note`는 선택. |
+| `sprint_result.json` | test-builder (Sprint 모드) | 반드시 `status, sprint, passed, total, failures` 포함. `regression_assets_added`, `manual_qa_required`, `note`는 선택. 루프 가드가 읽는다. |
+| `sprint_review_result.json` | risk-reviewer (Sprint 모드) | `risk_grade`, `missing_scenarios`, `recommended_tests`, `manual_qa_required` 등. |
+| `sprint_guard_result.json` | production-guard (Sprint 모드) | `release_readiness`, `core_paths_changed`, `performance`, `security`. |
+| `pr_*_result_<diff_ref>.json` | QA PR 모드 (`/qa`) | `/qa test|review|guard|all <diff_ref>` 산출물. close 시 함께 archive로 이동. |
 | `claude-progress.txt` | session-end.sh | 세션 간 로그. 200줄 초과 시 `archive/progress/`로 rotation. |
 
 ### archive (cold, 영속)
@@ -44,7 +51,10 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 | 경로 | 용도 |
 |------|------|
 | `archive/sprints/<slug>/sprint_N/contract.md` | 해당 sprint 계약 스냅샷 |
-| `archive/sprints/<slug>/sprint_N/result.json` | 해당 sprint 검증 결과 |
+| `archive/sprints/<slug>/sprint_N/result.json` | test-builder Sprint 모드 결과 (루트 `sprint_result.json`을 옮긴 것) |
+| `archive/sprints/<slug>/sprint_N/sprint_review_result.json` | risk-reviewer Sprint 모드 결과 (있을 때만) |
+| `archive/sprints/<slug>/sprint_N/sprint_guard_result.json` | production-guard Sprint 모드 결과 (있을 때만) |
+| `archive/sprints/<slug>/sprint_N/pr_*_result_<diff_ref>.json` | 해당 sprint 동안 누적된 PR 모드 산출물 |
 | `archive/sprints/<slug>/sprint_N/features.json` | 해당 sprint에서 완료된 feature 목록 |
 | `archive/sprints/<slug>/INDEX.json` | project의 sprint별 요약 (`/sprint status` 소스) |
 | `archive/sprints/<slug>/META.json` | project 메타 (slug, title, started, finished, sprint_count) |
@@ -56,10 +66,12 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 
 Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
-1. evaluator가 `sprint_result.json`을 `status: "FAIL"`로 기록하면
+1. test-builder(Sprint 모드)가 루트 `sprint_result.json`을 `status: "FAIL"`로 기록하면
 2. Stop 훅(`.claude/hooks/loop-guard.sh`)이 `decision: "block"`을 반환해 Claude를 재실행시킨다
-3. 재실행된 Claude는 블록 사유를 읽고 generator로 수정 → evaluator로 재검증한다
-4. 최대 15회 반복 후 강제 종료된다
+3. 재실행된 Claude는 블록 사유를 읽고 generator로 수정 → test-builder로 재검증한다
+4. 최대 5회 반복 후 강제 종료된다 (`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS`)
+
+자동 루프는 test-builder까지만 다룬다. risk-reviewer / production-guard는 사용자가 `/sprint review`로 명시 호출하거나 close 전에 직접 실행한다.
 
 ## 슬래시 커맨드
 
@@ -71,11 +83,12 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 | `/harness abandon` | 실패·중단 project를 `archive/sprints/<slug>-abandoned-<ts>/`로 이동 (같은 slug 재사용 가능) |
 | `/harness list` | project 나열 (finished / abandoned 구분) |
 | `/sprint [숫자]` | generator로 해당 스프린트 구현 |
-| `/sprint review` | evaluator로 현재 스프린트 검증 |
-| `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 |
-| `/sprint loop all` | 모든 미완료 스프린트 자동 순차 구현 |
-| `/sprint close` | PASS된 현재 스프린트를 archive로 이동 (`sprint-close.sh` 실행) |
+| `/sprint review` | QA 파이프라인(test-builder → risk-reviewer → production-guard) 실행 |
+| `/sprint loop [숫자]` | Stop 훅 기반 자동 루프 (test-builder PASS까지) |
+| `/sprint loop all` | 모든 미완료 스프린트 자동 순차 구현 (test-builder만 자동) |
+| `/sprint close` | 가드 통과 시 archive로 이동, QA 산출물 동반 (`sprint-close.sh` 실행) |
 | `/sprint status` | active + archived 통합 진행 상황 |
+| `/qa <test\|review\|guard\|all> <diff_ref>` | PR/diff 단위 QA 호출 (회귀 자산·리스크·부하·보안) |
 
 ## 개발 서버
 
@@ -84,8 +97,10 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 ## 중요 규칙
 
 - generator는 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
-- evaluator는 검증 후 반드시 `sprint_result.json`을 기록한다 (루프 가드가 이 파일을 읽음).
+- QA 3종은 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/qa.md` 순으로 읽는다. `qa.md`가 없거나 핵심 정보가 누락되면 추측 없이 작업을 거절하고 무엇이 필요한지 보고한다.
+- test-builder(Sprint 모드)는 검증 후 반드시 루트 `sprint_result.json`을 기록한다 (루프 가드와 sprint-close.sh가 이 파일을 읽음).
+- risk-reviewer / production-guard 산출물도 active 동안 루트에 둔다 (`sprint_review_result.json`, `sprint_guard_result.json`, `pr_*_result_<diff_ref>.json`). archive 경로에 직접 쓰지 않는다.
 - 기능 완료 후 `feature_list.json`의 해당 항목을 `completed: true`로 업데이트한다.
-- 스프린트 PASS 후에는 반드시 `/sprint close`를 실행해 archive로 이동해야 active 파일이 bounded로 유지된다.
+- 스프린트 PASS 후에는 반드시 `/sprint close`를 실행해 archive로 이동해야 active 파일이 bounded로 유지된다. close 가드: `status==PASS`, `risk_grade!=High` (또는 `--force-high-risk`), `release_readiness in [GO, SKIP]` (또는 `--force-nogo`).
 - 새 project 시작 전에 `/harness finish`(정상 완료) 또는 `/harness abandon`(실패·중단)으로 기존 project를 닫아야 한다.
 - 커밋 메시지는 한국어로 작성한다.
