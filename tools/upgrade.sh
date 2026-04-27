@@ -5,9 +5,11 @@
 # framework 파일을 업데이트합니다.
 #
 # 업그레이드 정책:
-#   - "structural" 파일 (훅·HARNESS.md·manifest.json·.gitignore): 그대로 덮어쓴다
+#   - "structural" 파일 (훅·manifest.json·HARNESS.md·qa.md.template·.gitignore): 그대로 덮어쓴다
 #   - "customizable" 파일 (stack.md·agents/*·commands/*·settings.json·.mcp.json):
 #       기존 파일 보존 + `<파일>.new`로 최신 버전을 병렬 생성 (사용자가 수동 머지)
+#   - "deprecated" 파일 (신버전에서 제거된 파일):
+#       대상에 남아있으면 `<파일>.deprecated`로 이름 변경 (단순 삭제하지 않음)
 #   - 상태 파일 (current_project.txt·feature_list.json·claude-progress.txt·archive/):
 #       절대 건드리지 않는다
 #
@@ -38,6 +40,7 @@ STRUCTURAL_FILES=(
   ".claude/hooks/project-abandon.sh"
   ".claude/manifest.json"
   ".claude/HARNESS.md"
+  ".claude/qa.md.template"
   ".claude/.gitignore"
 )
 
@@ -47,10 +50,18 @@ CUSTOMIZABLE_FILES=(
   ".claude/settings.json"
   ".claude/agents/planner.md"
   ".claude/agents/generator.md"
-  ".claude/agents/evaluator.md"
+  ".claude/agents/test-builder.md"
+  ".claude/agents/risk-reviewer.md"
+  ".claude/agents/production-guard.md"
   ".claude/commands/harness.md"
   ".claude/commands/sprint.md"
+  ".claude/commands/qa.md"
   ".mcp.json"
+)
+
+# deprecated: 신버전에서 제거된 파일. 대상에 남아있으면 .deprecated로 이름 변경 후 안내.
+DEPRECATED_FILES=(
+  ".claude/agents/evaluator.md"
 )
 
 print_help() {
@@ -72,8 +83,9 @@ ENV:
   HARNESS_REPO, HARNESS_BRANCH, LOCAL_SOURCE — install.sh와 동일
 
 업그레이드 정책:
-  structural  (훅·manifest·HARNESS.md·.gitignore): 덮어쓴다
+  structural  (훅·manifest·HARNESS.md·qa.md.template·.gitignore): 덮어쓴다
   customizable (stack.md·agents·commands·settings·.mcp.json): .new로 병렬 생성
+  deprecated   (신버전에서 제거된 파일): <파일>.deprecated로 rename
   state        (current_project.txt·feature_list.json·claude-progress.txt·archive/): 건드리지 않음
 EOF
 }
@@ -173,6 +185,8 @@ STRUCT_COUNT=0
 CUSTOM_NEW_COUNT=0
 CUSTOM_FORCE_COUNT=0
 MISSING_COUNT=0
+DEPRECATED_COUNT=0
+DEPRECATED_PATHS=()
 
 # ---- structural 복사 ----
 for rel in "${STRUCTURAL_FILES[@]}"; do
@@ -231,6 +245,22 @@ for rel in "${CUSTOMIZABLE_FILES[@]}"; do
   fi
 done
 
+# ---- deprecated 처리 ----
+# 신버전에서 제거된 파일이 대상에 남아있으면 .deprecated 로 이름 변경.
+# (단순 삭제하지 않는 이유: 사용자가 로컬 수정·참조용으로 두고 있을 수 있다.)
+for rel in "${DEPRECATED_FILES[@]}"; do
+  dst_file="$TARGET_ABS/$rel"
+  if [ ! -f "$dst_file" ]; then
+    continue
+  fi
+  echo "[deprecated] $rel → ${rel}.deprecated (신버전에서 제거됨)"
+  if [ "$DRY_RUN" -eq 0 ]; then
+    mv "$dst_file" "${dst_file}.deprecated"
+  fi
+  DEPRECATED_COUNT=$((DEPRECATED_COUNT + 1))
+  DEPRECATED_PATHS+=("$rel")
+done
+
 # ---- 요약 ----
 echo ""
 if [ "$DRY_RUN" -eq 1 ]; then
@@ -240,6 +270,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
   customizable .new 대상: $CUSTOM_NEW_COUNT 파일
   customizable 강제 덮어쓰기 대상: $CUSTOM_FORCE_COUNT 파일
   신규 추가 예정: $MISSING_COUNT 파일
+  deprecated 처리 예정: $DEPRECATED_COUNT 파일
 실제 적용하려면 --dry-run 없이 재실행하세요.
 EOF
   exit 0
@@ -252,8 +283,18 @@ cat <<EOF
   customizable .new 생성: $CUSTOM_NEW_COUNT 파일
   customizable 강제 덮어쓰기: $CUSTOM_FORCE_COUNT 파일
   신규 추가: $MISSING_COUNT 파일
+  deprecated 처리: $DEPRECATED_COUNT 파일
 
 EOF
+
+if [ "$DEPRECATED_COUNT" -gt 0 ]; then
+  echo "다음 파일은 신버전에서 제거되어 .deprecated 로 이름이 변경되었습니다:"
+  for p in "${DEPRECATED_PATHS[@]}"; do
+    echo "  - $p → ${p}.deprecated"
+  done
+  echo "내용을 확인 후 안전하다고 판단되면 삭제하세요. 로컬 커스터마이즈 한 부분이 있다면 새 파일로 마이그레이션하세요."
+  echo ""
+fi
 
 if [ "$CUSTOM_NEW_COUNT" -gt 0 ]; then
   cat <<'EOF'

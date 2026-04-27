@@ -80,8 +80,9 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 
 | 분류 | 파일 | 동작 |
 |------|------|------|
-| **structural** | 훅(`hooks/*.sh`), `manifest.json`, `HARNESS.md`, `.claude/.gitignore` | **덮어쓴다** (안전하게 최신으로 교체) |
+| **structural** | 훅(`hooks/*.sh`), `manifest.json`, `HARNESS.md`, `qa.md.template`, `.claude/.gitignore` | **덮어쓴다** (안전하게 최신으로 교체) |
 | **customizable** | `stack.md`, `agents/*.md`, `commands/*.md`, `settings.json`, `.mcp.json` | **기존 보존 + `<파일>.new` 병렬 생성** (사용자가 수동 머지) |
+| **deprecated** | 신버전에서 제거된 파일 (예: v1.2.0의 `agents/evaluator.md`) | **`<파일>.deprecated`로 rename** (단순 삭제하지 않음, 사용자가 검토 후 처리) |
 | **state** | `current_project.txt`, `feature_list.json`, `claude-progress.txt`, `archive/` | **건드리지 않음** |
 
 ### 플래그

@@ -44,7 +44,7 @@ ENV:
 
 설치 내용:
   .claude/agents/, .claude/commands/, .claude/hooks/
-  .claude/stack.md, .claude/settings.json, .claude/manifest.json, .claude/HARNESS.md
+  .claude/stack.md, .claude/qa.md.template, .claude/settings.json, .claude/manifest.json, .claude/HARNESS.md
   .mcp.json
   상태 스캐폴드 (기존 파일 보존): current_project.txt, feature_list.json, claude-progress.txt
 
@@ -132,6 +132,7 @@ cp -R "$SRC/.claude/agents/."   "$TARGET_ABS/.claude/agents/"
 cp -R "$SRC/.claude/commands/." "$TARGET_ABS/.claude/commands/"
 cp -R "$SRC/.claude/hooks/."    "$TARGET_ABS/.claude/hooks/"
 cp    "$SRC/.claude/stack.md"       "$TARGET_ABS/.claude/stack.md"
+cp    "$SRC/.claude/qa.md.template" "$TARGET_ABS/.claude/qa.md.template"
 cp    "$SRC/.claude/settings.json"  "$TARGET_ABS/.claude/settings.json"
 cp    "$SRC/.claude/manifest.json"  "$TARGET_ABS/.claude/manifest.json"
 if [ -f "$SRC/.claude/.gitignore" ]; then
