@@ -86,6 +86,80 @@ adoption 트랙에서 production-guard는 보통 SKIP을 반환합니다 (기존
 
 adoption 트랙에서는 1번 완료 시점에 `test_priority_queue.md`의 해당 행이 `done`으로 갱신됩니다 (test-builder가 처리). 2·3 단계는 큐 status에 영향을 주지 않습니다.
 
+## 모드 5: `loop <범위> [모드]` — adoption 큐 자동 소진 (adoption 트랙 전용)
+
+`test_priority_queue.md`의 `pending` 항목 전체를 우선순위 순으로 자동 처리합니다. **adoption 트랙 전용** — `current_adoption.txt`가 비어있으면 즉시 거부하세요.
+
+### 인자 패턴
+
+| 형태 | 의미 |
+|------|------|
+| `loop all` | 큐 pending 전체, 모드 default = `all`(test→review→guard) |
+| `loop all test` | 큐 pending 전체, test-builder만 |
+| `loop all review` | 큐 pending 전체, risk-reviewer만 |
+| `loop all guard` | 큐 pending 전체, production-guard만 |
+| `loop all all` | `loop all`과 동일 (명시 권장하지 않음) |
+
+`loop` 다음 첫 토큰은 **범위**, 두 번째 토큰은 **모드**입니다 — `/sprint loop all`(범위 = 모든 sprint)과 일관된 의미. 현재 범위는 `all`만 정의되어 있습니다.
+
+> 참고: `/sprint loop`는 generator를 부를 수 있어 FAIL 시 자동 수정 루프를 돕지만, `/qa loop`의 PR 모드는 generator를 호출하지 않습니다. test FAIL은 큐 status에 그대로 기록되고, 다음 항목으로 진행합니다(전체 루프는 멈추지 않음).
+
+### 실행 절차
+
+```
+0. 트랙 가드
+   - current_adoption.txt가 비어있으면 중단하고 /harness adopt 안내
+   - feature_inventory.json 또는 test_priority_queue.md가 없으면 중단
+
+1. 큐 파싱
+   - test_priority_queue.md 본 표(자동화 부적합 섹션 제외)에서
+     status == "pending" 행을 우선순위(Priority 컬럼) 오름차순으로 추출
+   - 사용자에게 처리 예정 항목 수와 모드를 한 번에 보고하고 진행 동의 받음
+
+2. 각 항목 처리 (우선순위 순서, 순차 실행, 병렬 금지)
+
+   각 feat-inv-NNN마다:
+     [모드 = test]
+       test-builder PR 모드 호출 (인자: feat-inv-NNN)
+       → 루트 pr_test_result_feat-inv-NNN.json 생성
+       → test-builder가 큐의 해당 행을 done(or skipped)으로 갱신
+
+     [모드 = review]
+       risk-reviewer PR 모드 호출
+       → 루트 pr_review_result_feat-inv-NNN.json 생성
+       → 큐 status는 변경하지 않음
+
+     [모드 = guard]
+       production-guard PR 모드 호출
+       → 루트 pr_guard_result_feat-inv-NNN.json 생성
+       → 큐 status는 변경하지 않음
+
+     [모드 = all]
+       test → review → guard를 순차 실행 (모드 4 `all <인자>`와 동일 규칙)
+       → test status == "FAIL" 이면 해당 항목의 review/guard는 건너뛰고 다음 큐 항목으로 진행
+       → review risk_grade == "High" 또는 guard release_readiness == "NO-GO"는
+         사용자 컨펌을 강제하지 않고 결과만 기록한다 (자동화 효율 우선).
+
+   항목 간 정책:
+   - 어떤 단계의 실패도 전체 루프를 중단하지 않는다 — 다음 큐 항목으로 진행.
+   - 한 항목 처리 후 다음 항목 시작 전 짧은 진행 출력: `[N/총개수] feat-inv-NNN 처리 시작...`
+
+3. 종합 결과 콘솔 출력
+   - 처리 시도 항목 수 / done / skipped / FAIL(test 기준)
+   - High risk 항목 목록 (mode가 review/all일 때)
+   - NO-GO 항목 목록 (mode가 guard/all일 때)
+   - 큐에 남은 pending 수 (있다면 사유 — 새로 추가됐거나 처리 중 상태가 바뀐 항목)
+   - 사용자에게 다음 안내:
+     - 모든 큐 항목이 done/skipped 이면 `/harness adopt-finish`
+     - 미해결 항목이 있으면 개별 `/qa <모드> feat-inv-NNN` 재시도
+
+### 중요 규칙
+
+- `loop` 모드는 sprint 트랙(`<diff_ref>` 인자)에서 동작하지 않는다 — sprint 트랙은 PR이 일회성이라 큐 개념이 없다. 인자가 `feat-inv-*` 패턴이 아닌 큐 항목이면 즉시 거부.
+- generator는 절대 호출하지 않는다 (PR 모드 자체가 변경 범위를 입력으로 받는 검증 단계).
+- Stop 훅 기반 자동 재시도(`loop-guard.sh`)는 sprint 트랙용이며, `/qa loop`는 사용하지 않는다.
+- adoption 트랙에서 production-guard는 보통 SKIP을 반환하므로, 모드가 `all`이면 핵심 경로 feature 위주로 시간이 소요된다는 점을 진행 동의 단계에서 사용자에게 알린다.
+
 ## 산출물 라이프사이클
 
 PR 결과 파일은 active 트랙 동안 루트에 누적됩니다.

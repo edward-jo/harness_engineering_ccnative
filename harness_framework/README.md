@@ -286,7 +286,7 @@ QA 에이전트는 모두 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파�
 
 호출:
 - sprint 트랙: `/sprint review`(파이프라인) 또는 `/qa <test\|review\|guard\|all> <diff_ref>`(PR)
-- adoption 트랙: `/harness adopt` → `/qa <test\|review\|guard\|all> feat-inv-NNN`(큐 항목별) → `/harness adopt-finish`
+- adoption 트랙: `/harness adopt` → `/qa <test\|review\|guard\|all> feat-inv-NNN`(큐 항목별) 또는 `/qa loop all [모드]`(큐 일괄 소진) → `/harness adopt-finish`
 
 ---
 
@@ -384,6 +384,7 @@ claude
 | `/qa review <인자>` | risk-reviewer PR 모드 — 리스크 식별 |
 | `/qa guard <인자>` | production-guard PR 모드 — 부하·보안 |
 | `/qa all <인자>` | 위 셋을 순차 실행 |
+| `/qa loop all [모드]` | adoption 트랙 전용 — 큐 pending 전체를 우선순위 순으로 자동 처리 (모드 생략 시 `all`) |
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor가 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드 + `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 (timestamp archive) |
