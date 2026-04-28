@@ -43,10 +43,11 @@ STRUCTURAL_FILES=(
   ".claude/hooks/adopt-finish.sh"
   ".claude/hooks/adopt-abandon.sh"
   ".claude/manifest.json"
-  ".claude/HARNESS.md"
   ".claude/qa-policy.md.template"
   ".claude/.gitignore"
 )
+# HARNESS.md는 소스의 harness_framework/CLAUDE.md를 rename해서 복사한다 (install.sh와 동일).
+# STRUCTURAL_FILES에 두면 $SRC/.claude/HARNESS.md를 찾다 skip되므로 별도 처리한다.
 
 # customizable: 기본은 .new로 병렬 생성, --force-all 시 덮어쓰기
 CUSTOMIZABLE_FILES=(
@@ -212,6 +213,16 @@ for rel in "${STRUCTURAL_FILES[@]}"; do
   fi
   STRUCT_COUNT=$((STRUCT_COUNT + 1))
 done
+
+# ---- HARNESS.md (소스 CLAUDE.md → 대상 .claude/HARNESS.md) ----
+if [ -f "$SRC/CLAUDE.md" ]; then
+  echo "[structural] .claude/HARNESS.md (← CLAUDE.md)"
+  if [ "$DRY_RUN" -eq 0 ]; then
+    mkdir -p "$TARGET_ABS/.claude"
+    cp "$SRC/CLAUDE.md" "$TARGET_ABS/.claude/HARNESS.md"
+  fi
+  STRUCT_COUNT=$((STRUCT_COUNT + 1))
+fi
 
 # ---- customizable 처리 ----
 for rel in "${CUSTOMIZABLE_FILES[@]}"; do
