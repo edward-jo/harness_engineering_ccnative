@@ -177,8 +177,9 @@ harness_framework/
 │   │   └── production-guard.md    # QA: 부하·보안·릴리스 게이트 (Sprint/PR 모드)
 │   ├── hooks/
 │   │   ├── loop-guard.sh          # Stop 훅: FAIL 감지 시 루프 재실행
-│   │   ├── progress-update.sh     # PostToolUse: git commit 감지 로그
+│   │   ├── progress-update.sh     # PostToolUse(Bash): git commit 감지 로그
 │   │   ├── session-end.sh         # Stop: 세션 종료 로그 + rotation
+│   │   ├── contract-lint.sh       # PostToolUse(Write|Edit): sprint_contract.md 검증 가능성 lint
 │   │   └── sprint-close.sh        # /sprint close 헬퍼 (archive 이동, QA 산출물 동반)
 │   └── commands/
 │       ├── harness.md             # /harness 슬래시 커맨드 (new/extend/finish/list/abandon)

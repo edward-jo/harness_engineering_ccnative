@@ -97,6 +97,8 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 ## 중요 규칙
 
 - generator는 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
+- **sprint_contract.md는 generator가 직접 작성·제안한다** (Anthropic Harness Design 원문: *"the generator and evaluator negotiated a sprint contract before any code was written"*). 파일이 없으면 generator가 `sprint_plan.md`를 보고 작성한 뒤 사용자 확인을 받고 코드를 시작한다. self-rubric은 `agents/generator.md`에 정의됨.
+- contract 작성 직후 `PostToolUse` 훅(`hooks/contract-lint.sh`)이 자동으로 모호 표현·도구 마커 누락·항목 수 부족을 stderr로 안내한다. 블로킹은 아니지만 경고가 있으면 즉시 보강한다.
 - QA 3종은 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/qa-policy.md` 순으로 읽는다. `qa-policy.md`가 없거나 핵심 정보가 누락되면 추측 없이 작업을 거절하고 무엇이 필요한지 보고한다.
 - test-builder(Sprint 모드)는 검증 후 반드시 루트 `sprint_result.json`을 기록한다 (루프 가드와 sprint-close.sh가 이 파일을 읽음).
 - risk-reviewer / production-guard 산출물도 active 동안 루트에 둔다 (`sprint_review_result.json`, `sprint_guard_result.json`, `pr_*_result_<diff_ref>.json`). archive 경로에 직접 쓰지 않는다.

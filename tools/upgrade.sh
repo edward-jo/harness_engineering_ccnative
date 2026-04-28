@@ -38,6 +38,7 @@ STRUCTURAL_FILES=(
   ".claude/hooks/session-end.sh"
   ".claude/hooks/sprint-close.sh"
   ".claude/hooks/project-abandon.sh"
+  ".claude/hooks/contract-lint.sh"
   ".claude/manifest.json"
   ".claude/HARNESS.md"
   ".claude/qa-policy.md.template"

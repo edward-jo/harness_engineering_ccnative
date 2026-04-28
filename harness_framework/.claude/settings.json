@@ -13,6 +13,16 @@
             "statusMessage": "진행 상황 기록 중..."
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\".claude/hooks/contract-lint.sh\"",
+            "statusMessage": "sprint_contract.md 점검 중..."
+          }
+        ]
       }
     ],
     "Stop": [

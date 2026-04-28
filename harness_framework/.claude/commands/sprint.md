@@ -9,8 +9,17 @@ QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack
 ---
 
 - **숫자** (예: `1`, `3`):
-  generator 에이전트를 사용해서 해당 스프린트를 구현하세요.
-  구현 전 `sprint_contract.md`에 완료 기준을 먼저 작성하세요.
+  generator 에이전트를 호출하세요.
+
+  **방법론 근거 (Anthropic Harness Design 원문)**: *"The generator proposed what it would build and how success would be verified … the generator and evaluator negotiated a sprint contract before any code was written."* — sprint_contract.md의 초안은 **generator가 직접 작성·제안**합니다. 사용자(필요 시 test-builder)가 그 제안을 검토·합의한 뒤에야 generator가 구현을 시작합니다.
+
+  흐름:
+  1. generator가 `sprint_plan.md`의 해당 sprint 항목을 보고 `sprint_contract.md`를 작성한다 (`generator.md`의 self-rubric 준수 — 검증 동작·관찰 결과·도구 분류·금지 표현 회피).
+  2. 작성 직후 `PostToolUse` 훅(`contract-lint.sh`)이 자동으로 lint를 돌려 모호 표현·검증 동사 부재를 stderr로 경고한다. generator는 경고를 받으면 즉시 보강한다.
+  3. generator가 짧게 사용자에게 보고. 사용자가 "진행" 또는 보강 지시를 줄 때까지 코드 작성을 시작하지 않는다.
+  4. 합의 후 generator가 완료 기준 순서대로 구현 → git 커밋 → `claude-progress.txt` 갱신.
+
+  > 더 엄격한 사전 점검이 필요하면 `/qa review`로 risk-reviewer를 PR/sprint 단위로 호출하세요.
 
 - **review**:
   현재 스프린트를 **QA 파이프라인**으로 검증합니다. 세 단계를 순서대로 실행하며 각 단계의 산출물은 모두 **루트 디렉터리**에 기록됩니다.
