@@ -1,9 +1,10 @@
 {
   "name": "claude-code-harness",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "released": "2026-04-28",
   "source": "https://github.com/edward-jo/harness_engineering_ccnative",
   "changelog": {
+    "1.3.2": "/qa 슬래시 커맨드에 loop 모드 추가 — adoption 트랙의 test_priority_queue.md를 일괄 소진. 형식: /qa loop <범위> [모드] (현재 범위는 all만, 모드는 test|review|guard|all, 생략 시 all). /sprint loop <N|all>과 일관: loop=자동 반복, all=처리 범위 전체. PR 모드는 generator를 부르지 않으므로 test FAIL이어도 다음 큐 항목으로 진행. sprint 트랙(diff_ref)에는 적용 안 됨.",
     "1.3.1": "upgrade.sh 버그 수정 — STRUCTURAL_FILES의 .claude/HARNESS.md 항목이 $SRC/.claude/HARNESS.md를 찾다 skip되어 1.0.0 이후 모든 업그레이드에서 HARNESS.md가 갱신되지 않던 문제를 해결. 소스의 harness_framework/CLAUDE.md를 .claude/HARNESS.md로 rename·복사하는 별도 분기를 추가(install.sh와 동일한 처리).",
     "1.3.0": "qa-surveyor 에이전트 도입 — 이미 개발 완료된 코드베이스에 처음 진입해 제품 전체를 이해하고 테스트 케이스 토대를 만드는 retrofit 트랙. sprint 트랙과 공존(current_adoption.txt active marker). 산출물 3종: qa-policy.md(채움), feature_inventory.json, test_priority_queue.md. 라이프사이클: /harness adopt → /qa <test|review|guard|all> feat-inv-NNN → /harness adopt-finish (또는 adopt-abandon). adopt-finish.sh/adopt-abandon.sh 헬퍼 + inventory-lint.sh PostToolUse 훅 신설. test-builder PR 모드가 priority-id 인자 분기 추가. /harness list가 두 트랙 모두 표시.",
     "1.2.3": "Anthropic Harness Design 원문의 'generator가 sprint_contract를 작성·제안한다' 모델을 framework에 반영. (1) generator.md 워크플로우에 contract 작성 분기와 self-rubric(검증 동작·관찰 결과·도구 분류·금지 표현) 추가. (2) /sprint <n> 안내 강화. (3) contract-lint.sh PostToolUse(Write|Edit) 훅 신설 — 모호 표현·도구 마커 누락·항목 수 부족을 stderr로 안내(블로킹 아님). evaluator review 단계를 LLM 호출 없이 정적 lint로 대체.",

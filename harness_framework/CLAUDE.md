@@ -99,6 +99,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 | `/sprint close` | 가드 통과 시 archive로 이동, QA 산출물 동반 (`sprint-close.sh` 실행) |
 | `/sprint status` | active + archived 통합 진행 상황 |
 | `/qa <test\|review\|guard\|all> <인자>` | PR/diff 또는 adoption 큐 항목 단위 QA 호출. 인자 형태로 트랙 자동 분기 (`feat-inv-*` = adoption / 그 외 = sprint) |
+| `/qa loop all [모드]` | adoption 트랙 전용. 큐 pending 전체를 우선순위 순으로 자동 처리. 모드 생략 시 `all` (test→review→guard). FAIL이어도 다음 항목으로 진행 |
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor 호출 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드, `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 |
