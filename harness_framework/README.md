@@ -172,7 +172,8 @@ harness_framework/
 │   ├── agents/
 │   │   ├── planner.md             # 기획자: new/extend 두 모드
 │   │   ├── generator.md           # 구현자: stack.md 기반으로 코딩
-│   │   ├── test-builder.md        # QA: 회귀 자산 + sprint 완료 기준 검증 (Sprint/PR 모드)
+│   │   ├── qa-surveyor.md         # QA 측량가: 기존 코드베이스 retrofit (도메인·매핑·우선순위)
+│   │   ├── test-builder.md        # QA: 회귀 자산 + sprint 완료 기준 검증 (Sprint/PR/adoption 모드)
 │   │   ├── risk-reviewer.md       # QA: 누락 시나리오·장애 모드·릴리스 리스크 (Sprint/PR 모드)
 │   │   └── production-guard.md    # QA: 부하·보안·릴리스 게이트 (Sprint/PR 모드)
 │   ├── hooks/
@@ -180,6 +181,9 @@ harness_framework/
 │   │   ├── progress-update.sh     # PostToolUse(Bash): git commit 감지 로그
 │   │   ├── session-end.sh         # Stop: 세션 종료 로그 + rotation
 │   │   ├── contract-lint.sh       # PostToolUse(Write|Edit): sprint_contract.md 검증 가능성 lint
+│   │   ├── inventory-lint.sh      # PostToolUse(Write|Edit): feature_inventory.json·test_priority_queue.md 스키마 lint
+│   │   ├── adopt-finish.sh        # /harness adopt-finish 헬퍼 (큐 done 가드 + archive 이동)
+│   │   ├── adopt-abandon.sh       # /harness adopt-abandon 헬퍼 (timestamp archive)
 │   │   └── sprint-close.sh        # /sprint close 헬퍼 (archive 이동, QA 산출물 동반)
 │   └── commands/
 │       ├── harness.md             # /harness 슬래시 커맨드 (new/extend/finish/list/abandon)
@@ -193,18 +197,26 @@ harness_framework/
 ├── sprint_result.json             # test-builder(Sprint 모드) 산출물, 루프 가드가 읽음 (close 시 archive로 이동)
 ├── sprint_review_result.json      # risk-reviewer(Sprint 모드) 산출물 (close 시 archive로 이동)
 ├── sprint_guard_result.json       # production-guard(Sprint 모드) 산출물 (close 시 archive로 이동)
-├── pr_test_result_*.json          # /qa test PR 결과 (close 시 archive로 이동)
-├── pr_review_result_*.json        # /qa review PR 결과 (close 시 archive로 이동)
-├── pr_guard_result_*.json         # /qa guard PR 결과 (close 시 archive로 이동)
-├── qa-policy.md                          # QA 정책·도메인 컨텍스트 (사용자가 template 복사 후 채움)
+├── pr_test_result_*.json          # /qa test PR 결과 (sprint=close 또는 adoption=adopt-finish 시 archive로 이동)
+├── pr_review_result_*.json        # /qa review PR 결과
+├── pr_guard_result_*.json         # /qa guard PR 결과
+├── qa-policy.md                   # QA 정책·도메인 컨텍스트 (사용자가 template 복사 후 채움 — sprint와 adoption이 공유)
+├── current_adoption.txt           # 현재 active retrofit slug (비어있으면 없음, sprint와 공존 가능)
+├── feature_inventory.json         # qa-surveyor 코드베이스 매핑 (adoption 트랙)
+├── test_priority_queue.md         # 회귀 테스트 우선순위 큐 (adoption 트랙)
 ├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
-└── archive/                       # project 아카이브 (처음엔 없음, /sprint close 시 생성)
+└── archive/                       # 아카이브 (처음엔 없음, close/finish 시 생성)
     ├── sprints/<project-slug>/
     │   ├── META.json
     │   ├── INDEX.json
-    │   ├── sprint_N/{contract.md,result.json,features.json}
+    │   ├── sprint_N/{contract.md,result.json,features.json,sprint_review_result.json,sprint_guard_result.json,pr_*}
     │   ├── feature_list.json      # project 종료 시 최종 스냅샷
     │   └── sprint_plan.md
+    ├── adoptions/<adoption-slug>/
+    │   ├── META.json              # status, started/finished, feature_count, tests_added/skipped
+    │   ├── feature_inventory.json
+    │   ├── test_priority_queue.md
+    │   └── pr_*_result_feat-inv-*.json
     └── progress/
         └── claude-progress-YYYY-MM.txt
 ```
@@ -254,17 +266,27 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 permissionMode: acceptEdits
 ```
 
-### QA — 세 에이전트로 분리
+### QA — 네 에이전트, 두 트랙
 
-evaluator는 v1.2.0에서 세 QA 에이전트로 확장되었습니다. 각 에이전트는 **Sprint 모드**(현재 sprint 검증)와 **PR 모드**(diff 단위 검증)로 동작하며, `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일을 함께 읽습니다. 산출물은 active 동안 모두 **루트 디렉터리**에 기록되고, `/sprint close` 시 archive로 동반 이동됩니다.
+evaluator는 v1.2.0에서 세 QA 에이전트로 확장되었고, v1.3.0에서 retrofit 전담 **qa-surveyor**가 추가되어 총 4종이 되었습니다.
 
-| 에이전트 | 역할 | Sprint 모드 산출물 | PR 모드 산출물 | 모델·권한 |
-|----------|------|-------------------|---------------|-----------|
-| `test-builder` | 완료 기준 검증 + 회귀 자산(단위·통합·API·E2E) 작성 | `sprint_result.json` | `pr_test_result_<diff_ref>.json` | sonnet, `acceptEdits` |
-| `risk-reviewer` | 누락 시나리오·장애 모드·컴플라이언스·리스크 등급 | `sprint_review_result.json` | `pr_review_result_<diff_ref>.json` | sonnet, `plan` |
-| `production-guard` | 핵심 경로 변경 시 부하·보안·릴리스 게이트(GO/SKIP/NO-GO) | `sprint_guard_result.json` | `pr_guard_result_<diff_ref>.json` | sonnet, `acceptEdits` |
+**라이프사이클은 두 트랙**입니다:
 
-`/sprint review`는 위 셋을 순서대로 실행하며 단계별 중단 조건이 있습니다. `/qa <test|review|guard|all> <diff_ref>`는 PR 모드를 직접 호출합니다.
+- **sprint 트랙**: 신규 개발. planner → generator → test-builder/risk-reviewer/production-guard.
+- **adoption 트랙**: 기존 코드베이스 retrofit. **qa-surveyor → test-builder PR 모드(adoption)** → /harness adopt-finish.
+
+QA 에이전트는 모두 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일을 함께 읽습니다.
+
+| 에이전트 | 단계 | 트랙 | 주 산출물 | 모델·권한 |
+|----------|------|------|----------|-----------|
+| `qa-surveyor` | 준비(preparation) | adoption | `qa-policy.md`(채움), `feature_inventory.json`, `test_priority_queue.md` | opus, `acceptEdits` |
+| `test-builder` | 실행 | sprint(Sprint/PR) + adoption(PR) | `sprint_result.json`, `pr_test_result_<인자>.json` | sonnet, `acceptEdits` |
+| `risk-reviewer` | 실행 | sprint + adoption(PR) | `sprint_review_result.json`, `pr_review_result_<인자>.json` | sonnet, `plan` |
+| `production-guard` | 실행 | sprint + adoption(PR, 보통 SKIP) | `sprint_guard_result.json`, `pr_guard_result_<인자>.json` | sonnet, `acceptEdits` |
+
+호출:
+- sprint 트랙: `/sprint review`(파이프라인) 또는 `/qa <test\|review\|guard\|all> <diff_ref>`(PR)
+- adoption 트랙: `/harness adopt` → `/qa <test\|review\|guard\|all> feat-inv-NNN`(큐 항목별) → `/harness adopt-finish`
 
 ---
 
@@ -358,10 +380,13 @@ claude
 | `/sprint loop all` | 모든 미완료 스프린트 자동 순차 구현 (test-builder만 자동) |
 | `/sprint close` | 가드 통과 시 현재 스프린트를 archive로 이동 (QA 산출물 동반) |
 | `/sprint status` | 현재 project의 active + archived 진행 상황 |
-| `/qa test <diff_ref>` | test-builder PR 모드 — 회귀 자산 작성 |
-| `/qa review <diff_ref>` | risk-reviewer PR 모드 — 리스크 식별 |
-| `/qa guard <diff_ref>` | production-guard PR 모드 — 부하·보안 |
-| `/qa all <diff_ref>` | 위 셋을 순차 실행 |
+| `/qa test <인자>` | test-builder PR 모드 — 회귀 자산 작성. 인자가 `feat-inv-*`이면 adoption 트랙, 그 외 sprint 트랙 |
+| `/qa review <인자>` | risk-reviewer PR 모드 — 리스크 식별 |
+| `/qa guard <인자>` | production-guard PR 모드 — 부하·보안 |
+| `/qa all <인자>` | 위 셋을 순차 실행 |
+| `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor가 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성 |
+| `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드 + `--force-incomplete` 옵션) |
+| `/harness adopt-abandon` | retrofit 중단 처리 (timestamp archive) |
 
 ---
 

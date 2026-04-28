@@ -1,6 +1,14 @@
 하네스를 관리합니다. `$ARGUMENTS`의 첫 토큰으로 모드를 결정하세요.
 
-## 모드 1: 새 project 시작 — `$ARGUMENTS`가 비어있거나 `list`/`extend`/`finish`/`abandon`이 아닌 자유 텍스트
+> **트랙 두 개 공존**: harness는 두 트랙을 평행으로 운영합니다.
+> - **sprint 트랙**: 신규 개발. `current_project.txt`가 active marker. `/harness <아이디어>` / `/harness extend` / `/harness finish` / `/harness abandon`.
+> - **adoption 트랙**: 기존 코드베이스 retrofit. `current_adoption.txt`가 active marker. `/harness adopt` / `/harness adopt-finish` / `/harness adopt-abandon`.
+>
+> 두 트랙은 각자 독립이며 동시에 active일 수 있습니다 (예: retrofit 도중 hotfix sprint).
+
+---
+
+## 모드 1: 새 project 시작 — `$ARGUMENTS`가 비어있거나 `list`/`extend`/`finish`/`abandon`/`adopt`/`adopt-finish`/`adopt-abandon`이 아닌 자유 텍스트
 
 1. `current_project.txt` 읽기.
 2. **비어있지 않으면 중단**하고 다음을 안내:
@@ -64,23 +72,91 @@ bash .claude/hooks/project-abandon.sh
 
 완료 후 같은 slug로 새 project 시작 가능: `/harness <원래 slug 재사용 가능>`.
 
-## 모드 5: `list` — project 나열
+## 모드 5: `list` — project + adoption 나열
 
-1. `archive/sprints/*/META.json`을 순회하며 `{slug, title, started, finished, abandoned, status, sprint_count}` 추출.
-2. `current_project.txt`가 비어있지 않으면 active project도 표시.
-3. 출력 형식:
+1. **sprint 트랙**: `archive/sprints/*/META.json`을 순회하며 `{slug, title, started, finished, abandoned, status, sprint_count}` 추출.
+2. **adoption 트랙**: `archive/adoptions/*/META.json`을 순회하며 `{slug, title, started, finished, abandoned, status, feature_count, tests_added}` 추출.
+3. `current_project.txt`/`current_adoption.txt`가 비어있지 않으면 active 항목도 표시.
+4. 출력 형식:
    ```
+   == Sprint 트랙 ==
    Active:
      <slug> — <title> (started: YYYY-MM-DD, sprints: N)
    Archived (finished):
      <slug> — <title> (started → finished, sprints: N)
    Abandoned:
      <slug>-abandoned-<ts> — <title> (started → abandoned, sprints: N)
-     ...
+
+   == Adoption 트랙 ==
+   Active:
+     <slug> — <title> (started: YYYY-MM-DD, features: F, tests: T)
+   Archived (finished):
+     <slug> — <title> (started → finished, features: F, tests: T)
+   Abandoned:
+     <slug>-abandoned-<ts> — <title>
    ```
+
+## 모드 6: `adopt [<제목>]` — 기존 코드베이스 retrofit 시작
+
+이미 개발이 완료된 코드베이스에 처음 들어가서 제품 전체를 이해하고 회귀 테스트 작성의 토대를 만드는 트랙입니다.
+
+1. `current_adoption.txt` 읽기.
+2. **비어있지 않으면 중단**하고 다음을 안내:
+   ```
+   이미 active adoption이 존재합니다: <slug>
+   - 정상 종료: /harness adopt-finish (모든 큐 done 시)
+   - 중단: /harness adopt-abandon
+   ```
+3. 비어있으면 qa-surveyor 에이전트 호출. `$ARGUMENTS`의 나머지 토큰을 retrofit 한 줄 제목으로 전달.
+   - qa-surveyor가 slug를 자동 생성: `adopted-$(date '+%Y-%m-%d-%H%M')`
+   - `current_adoption.txt`에 slug 기록
+   - `archive/adoptions/<slug>/META.json` stub 생성 (`status: active`, `title`, `started`)
+   - `qa-policy.md`를 도메인 인터뷰 기반으로 채움
+   - `feature_inventory.json` 작성 (역추출 매핑)
+   - `test_priority_queue.md` 작성 (우선순위 큐, 상태 컬럼 포함)
+4. 완료 후 다음 단계 안내:
+   - `/qa test feat-inv-001` — priority 1 회귀 자산 작성 (test-builder PR 모드, adoption 트랙)
+   - `/qa all feat-inv-001` — test-builder + risk-reviewer + production-guard 순차 호출
+   - `/harness adopt-finish` — 큐 모두 done 시 종료
+   - `/harness adopt-abandon` — 중단
+
+> **공존 규칙**: sprint 트랙(`current_project.txt`)이 active여도 adoption 시작 가능. test-builder PR 모드는 인자 형태(`feat-inv-*` vs `<diff_ref>`)로 트랙을 자동 판별합니다.
+
+## 모드 7: `adopt-finish` — adoption 정상 종료
+
+```bash
+bash .claude/hooks/adopt-finish.sh
+# 큐에 미완료 항목이 있어도 강제 종료:
+# bash .claude/hooks/adopt-finish.sh --force-incomplete
+```
+
+가드:
+- `current_adoption.txt`에 active slug 존재
+- `feature_inventory.json`·`test_priority_queue.md` 모두 존재
+- `test_priority_queue.md`의 본 표(자동화 부적합 섹션 제외)에서 모든 status가 `done` 또는 `skipped` (또는 `--force-incomplete`)
+
+수행:
+- `feature_inventory.json` → `archive/adoptions/<slug>/feature_inventory.json`
+- `test_priority_queue.md` → `archive/adoptions/<slug>/test_priority_queue.md`
+- `pr_test_result_feat-inv-*.json` / `pr_review_result_feat-inv-*.json` / `pr_guard_result_feat-inv-*.json` → 같은 archive 경로
+- `META.json` 갱신 (`status: finished`, `finished`, `feature_count`, `tests_added`, `tests_skipped`)
+- `current_adoption.txt` 비우기
+
+> **qa-policy.md는 이동하지 않습니다** — adoption 종료 후에도 sprint 트랙에서 계속 사용.
+
+## 모드 8: `adopt-abandon` — adoption 실패·중단 처리
+
+```bash
+bash .claude/hooks/adopt-abandon.sh
+```
+
+가드 없음. 산출물(`feature_inventory.json`, `test_priority_queue.md`, `pr_*_result_feat-inv-*.json`)을 `archive/adoptions/<slug>-abandoned-<timestamp>/`로 통째 이동. META.json: `status: abandoned`, `abandoned: <date>`. 같은 base slug 재사용 가능.
+
+---
 
 ## 파일 위치 치트시트
 
+### sprint 트랙
 | 용도 | 경로 |
 |------|------|
 | 현재 active slug | `current_project.txt` |
@@ -91,3 +167,14 @@ bash .claude/hooks/project-abandon.sh
 | 과거 sprint 스냅샷 | `archive/sprints/<slug>/sprint_N/` |
 | project 메타 | `archive/sprints/<slug>/META.json` |
 | project 스프린트 요약 | `archive/sprints/<slug>/INDEX.json` |
+
+### adoption 트랙
+| 용도 | 경로 |
+|------|------|
+| 현재 active slug | `current_adoption.txt` |
+| 코드베이스 매핑 | `feature_inventory.json` |
+| 테스트 우선순위 큐 | `test_priority_queue.md` |
+| QA 정책·도메인 컨텍스트 | `.claude/qa-policy.md` (sprint와 공유) |
+| PR 산출물 (트랙별) | `pr_test_result_feat-inv-*.json` 등 |
+| 과거 adoption 스냅샷 | `archive/adoptions/<slug>/` |
+| adoption 메타 | `archive/adoptions/<slug>/META.json` |

@@ -130,13 +130,31 @@ FAIL 시:
 
 ## PR 모드 (회귀 자산 확장)
 
-### 절차
+PR 모드는 두 가지 인자 형태를 받는다. 첫 토큰의 형태로 자동 분기한다.
+
+### 인자 분기
+
+- **priority-id** (`feat-inv-NNN` 패턴) → **adoption(retrofit) 트랙**. `feature_inventory.json`에서 컨텍스트 로드. `current_adoption.txt`가 비어있으면 중단하고 `/harness adopt` 안내.
+- **그 외**(commit hash, branch, `HEAD~N..HEAD`, 빈값) → **sprint 트랙**. `git diff` 기반 변경 범위 파악.
+
+### 절차 (sprint 트랙: diff_ref)
 1. 사용자가 지정한 변경 범위 파악 (`git diff`, 특정 커밋, 특정 파일).
 2. 변경된 코드와 동일 모듈의 기존 테스트를 `Grep`/`Glob`으로 탐색해 컨벤션 학습.
 3. 적절한 테스트 레이어 결정 (단위 → 통합 → API 계약 → E2E).
 4. 가장 낮은 레이어를 우선한다. 단위로 잡을 수 있는 것을 E2E로 만들지 않는다.
 5. `stack.md`의 도메인 체크리스트 적용 (경계값, 동시성, 멱등성, 타임존, 외부 의존성 실패, 권한 분리).
 6. 테스트 작성 후 반드시 실행하여 통과 확인.
+
+### 절차 (adoption 트랙: priority-id)
+1. `current_adoption.txt`에서 active adoption slug 확인 — 없으면 중단.
+2. `feature_inventory.json`에서 `id == <priority-id>`인 feature 로드. 없으면 중단하고 사용자에게 보고.
+3. 해당 feature의 `entry_points` / `core_modules` / `db_tables` / `external_deps` / `domain_invariants`를 컨텍스트로 사용.
+4. 기존 테스트 파일을 동일 모듈 경로에서 `Grep`/`Glob`으로 탐색해 컨벤션 학습.
+5. 적절한 테스트 레이어 결정 (단위 → 통합 → API 계약 → E2E). 가장 낮은 레이어 우선.
+6. `qa-policy.md`의 도메인 체크리스트와 feature의 `domain_invariants`를 모두 적용.
+7. 테스트 작성 후 실행해 통과 확인.
+8. **`test_priority_queue.md`의 해당 행 status를 `done`으로, PR Result 셀에 산출물 파일명을 기록한다.** Edit 도구로 정확히 갱신 — inventory-lint 훅이 무결성을 점검한다.
+9. 자동화 부적합으로 판단되면 status를 `skipped`로 표시하고 사유를 PR Result 셀에 적는다.
 
 ### PR 모드 산출물
 
@@ -152,9 +170,12 @@ PR 테스트 자산 생성 결과
 커버리지 노트: ...
 ```
 
-**루트 `pr_test_result_<diff_ref>.json`:**
+**루트 `pr_test_result_<인자>.json`:**
 
-PR 결과도 **루트 디렉터리**에 저장한다 (`harness_framework/pr_test_result_<diff_ref>.json`). `<diff_ref>`는 안전한 슬러그(영숫자·하이픈·언더스코어)로 정규화한다. `/sprint close` 시점에 sprint-close.sh가 함께 archive로 이동시킨다.
+`<인자>`는 호출 시 받은 priority-id 또는 diff_ref(안전 슬러그로 정규화). 두 트랙은 같은 파일명 패턴을 공유하지만 서로 다른 종료 헬퍼가 처리한다:
+
+- **sprint 트랙**(`<diff_ref>`): `/sprint close` 시 `sprint-close.sh`가 archive로 이동
+- **adoption 트랙**(`feat-inv-NNN`): `/harness adopt-finish` 시 `adopt-finish.sh`가 `archive/adoptions/<slug>/`로 이동
 
 ```json
 {
@@ -165,6 +186,23 @@ PR 결과도 **루트 디렉터리**에 저장한다 (`harness_framework/pr_test
   ],
   "tests_modified": [],
   "test_run": {"command": "npm test", "passed": 8, "failed": 0},
+  "manual_qa_required": [],
+  "deferred_to_risk_reviewer": []
+}
+```
+
+adoption 트랙에서는 `diff_ref` 대신 `priority_id` 필드를 사용한다:
+
+```json
+{
+  "status": "PASS",
+  "priority_id": "feat-inv-001",
+  "adoption_slug": "adopted-2026-04-28-1234",
+  "feature_title": "사용자 회원가입",
+  "tests_added": [
+    {"path": "tests/api/auth/test_signup.py", "cases": 6}
+  ],
+  "test_run": {"command": "pytest tests/api/auth/test_signup.py", "passed": 6, "failed": 0},
   "manual_qa_required": [],
   "deferred_to_risk_reviewer": []
 }

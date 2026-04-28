@@ -21,6 +21,11 @@
             "type": "command",
             "command": "\".claude/hooks/contract-lint.sh\"",
             "statusMessage": "sprint_contract.md 점검 중..."
+          },
+          {
+            "type": "command",
+            "command": "\".claude/hooks/inventory-lint.sh\"",
+            "statusMessage": "feature_inventory.json / test_priority_queue.md 점검 중..."
           }
         ]
       }

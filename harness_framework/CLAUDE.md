@@ -16,13 +16,16 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 
 ## 에이전트 구조
 
-| 에이전트 | 파일 | 역할 |
-|----------|------|------|
-| planner | `.claude/agents/planner.md` | **New**: 새 project 시작 (Sprint 1, feat-001부터) / **Extend**: max+1부터 이어서 |
-| generator | `.claude/agents/generator.md` | `.claude/stack.md` + `sprint_contract.md` 기반 기능 구현 + git 커밋 |
-| test-builder | `.claude/agents/test-builder.md` | Sprint/PR 모드. 완료 기준 검증 + 회귀 자산(단위·통합·API·E2E). `sprint_result.json` / `pr_test_result_*.json` 기록 |
-| risk-reviewer | `.claude/agents/risk-reviewer.md` | Sprint/PR 모드. 누락 시나리오·장애 모드·컴플라이언스. `sprint_review_result.json` / `pr_review_result_*.json` 기록 |
-| production-guard | `.claude/agents/production-guard.md` | Sprint/PR 모드. 부하·보안·릴리스 게이트. `sprint_guard_result.json` / `pr_guard_result_*.json` 기록 |
+framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrofit)을 평행 운영. 두 트랙은 동시 active 가능.
+
+| 에이전트 | 파일 | 트랙 | 역할 |
+|----------|------|------|------|
+| planner | `.claude/agents/planner.md` | sprint | **New**: 새 project 시작 (Sprint 1, feat-001부터) / **Extend**: max+1부터 이어서 |
+| generator | `.claude/agents/generator.md` | sprint | `.claude/stack.md` + `sprint_contract.md` 기반 기능 구현 + git 커밋 |
+| qa-surveyor | `.claude/agents/qa-surveyor.md` | adoption (단계 0~5) | 기존 코드베이스 진입 시 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성. 산출물: `qa-policy.md`(채움), `feature_inventory.json`, `test_priority_queue.md` |
+| test-builder | `.claude/agents/test-builder.md` | sprint(Sprint/PR) + adoption(PR) | 완료 기준 검증 + 회귀 자산. PR 모드는 인자 형태(`feat-inv-*` vs `<diff_ref>`)로 트랙 자동 분기. `sprint_result.json` / `pr_test_result_*.json` |
+| risk-reviewer | `.claude/agents/risk-reviewer.md` | sprint(Sprint/PR) + adoption(PR) | 누락 시나리오·장애 모드·컴플라이언스. `sprint_review_result.json` / `pr_review_result_*.json` |
+| production-guard | `.claude/agents/production-guard.md` | sprint(Sprint/PR) + adoption(PR, 보통 SKIP) | 부하·보안·릴리스 게이트. `sprint_guard_result.json` / `pr_guard_result_*.json` |
 
 ## 스택 / QA 설정
 
@@ -43,7 +46,10 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 | `sprint_result.json` | test-builder (Sprint 모드) | 반드시 `status, sprint, passed, total, failures` 포함. `regression_assets_added`, `manual_qa_required`, `note`는 선택. 루프 가드가 읽는다. |
 | `sprint_review_result.json` | risk-reviewer (Sprint 모드) | `risk_grade`, `missing_scenarios`, `recommended_tests`, `manual_qa_required` 등. |
 | `sprint_guard_result.json` | production-guard (Sprint 모드) | `release_readiness`, `core_paths_changed`, `performance`, `security`. |
-| `pr_*_result_<diff_ref>.json` | QA PR 모드 (`/qa`) | `/qa test|review|guard|all <diff_ref>` 산출물. close 시 함께 archive로 이동. |
+| `pr_*_result_<인자>.json` | QA PR 모드 (`/qa`) | `<인자>`가 `feat-inv-NNN`이면 adoption, 그 외 sprint. close 또는 adopt-finish 시 각 archive로 이동. |
+| `current_adoption.txt` | `/harness adopt` (qa-surveyor) | 현재 active retrofit slug 한 줄. sprint와 무관하게 공존 가능. |
+| `feature_inventory.json` | qa-surveyor | 코드베이스 역추출 매핑. 스키마는 inventory-lint가 점검. |
+| `test_priority_queue.md` | qa-surveyor (+test-builder가 status 갱신) | 회귀 테스트 우선순위 큐. status: pending/in_progress/done/skipped. |
 | `claude-progress.txt` | session-end.sh | 세션 간 로그. 200줄 초과 시 `archive/progress/`로 rotation. |
 
 ### archive (cold, 영속)
@@ -56,6 +62,10 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 | `archive/sprints/<slug>/sprint_N/sprint_guard_result.json` | production-guard Sprint 모드 결과 (있을 때만) |
 | `archive/sprints/<slug>/sprint_N/pr_*_result_<diff_ref>.json` | 해당 sprint 동안 누적된 PR 모드 산출물 |
 | `archive/sprints/<slug>/sprint_N/features.json` | 해당 sprint에서 완료된 feature 목록 |
+| `archive/adoptions/<slug>/META.json` | adoption 메타 (`status`, `started`, `finished`, `feature_count`, `tests_added/skipped`) |
+| `archive/adoptions/<slug>/feature_inventory.json` | qa-surveyor 코드베이스 매핑 (adopt-finish 시 이동) |
+| `archive/adoptions/<slug>/test_priority_queue.md` | 회귀 테스트 우선순위 큐 최종 상태 |
+| `archive/adoptions/<slug>/pr_*_result_feat-inv-*.json` | adoption 트랙에서 누적된 PR 모드 산출물 |
 | `archive/sprints/<slug>/INDEX.json` | project의 sprint별 요약 (`/sprint status` 소스) |
 | `archive/sprints/<slug>/META.json` | project 메타 (slug, title, started, finished, sprint_count) |
 | `archive/sprints/<slug>/feature_list.json` | project 종료 시 최종 스냅샷 |
@@ -88,7 +98,10 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 | `/sprint loop all` | 모든 미완료 스프린트 자동 순차 구현 (test-builder만 자동) |
 | `/sprint close` | 가드 통과 시 archive로 이동, QA 산출물 동반 (`sprint-close.sh` 실행) |
 | `/sprint status` | active + archived 통합 진행 상황 |
-| `/qa <test\|review\|guard\|all> <diff_ref>` | PR/diff 단위 QA 호출 (회귀 자산·리스크·부하·보안) |
+| `/qa <test\|review\|guard\|all> <인자>` | PR/diff 또는 adoption 큐 항목 단위 QA 호출. 인자 형태로 트랙 자동 분기 (`feat-inv-*` = adoption / 그 외 = sprint) |
+| `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor 호출 |
+| `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드, `--force-incomplete` 옵션) |
+| `/harness adopt-abandon` | retrofit 중단 처리 |
 
 ## 개발 서버
 
@@ -105,4 +118,6 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 - 기능 완료 후 `feature_list.json`의 해당 항목을 `completed: true`로 업데이트한다.
 - 스프린트 PASS 후에는 반드시 `/sprint close`를 실행해 archive로 이동해야 active 파일이 bounded로 유지된다. close 가드: `status==PASS`, `risk_grade!=High` (또는 `--force-high-risk`), `release_readiness in [GO, SKIP]` (또는 `--force-nogo`).
 - 새 project 시작 전에 `/harness finish`(정상 완료) 또는 `/harness abandon`(실패·중단)으로 기존 project를 닫아야 한다.
+- **adoption 트랙은 sprint 트랙과 공존 가능**. `current_adoption.txt`가 active marker. 시작은 `/harness adopt`(qa-surveyor 호출), 종료는 `/harness adopt-finish` 또는 `/harness adopt-abandon`. adopt-finish는 `test_priority_queue.md`의 모든 항목이 `done`/`skipped`여야 통과(`--force-incomplete`로 우회).
+- adoption 트랙 산출물(`feature_inventory.json`, `test_priority_queue.md`, `pr_*_result_feat-inv-*.json`)도 active 동안 루트에 둔다. adopt-finish 시 `archive/adoptions/<slug>/`로 이동. `qa-policy.md`는 이동하지 않고 sprint 트랙에서 계속 사용.
 - 커밋 메시지는 한국어로 작성한다.
