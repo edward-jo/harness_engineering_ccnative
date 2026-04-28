@@ -1,9 +1,10 @@
 {
   "name": "claude-code-harness",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "released": "2026-04-29",
   "source": "https://github.com/edward-jo/harness_engineering_ccnative",
   "changelog": {
+    "1.3.4": "adopt-finish.sh 버그 수정 — test_priority_queue.md의 Status 컬럼 인덱스를 헤더 행에서 동적으로 파싱하도록 변경. 이전에는 6번째 셀(c[7])로 하드코딩되어 있어 qa-surveyor가 큐 템플릿 컬럼 순서를 변경하면 가드/카운트가 깨지던 문제를 해결. 헤더 행에서 'status' 컬럼을 찾지 못하면 행 자체를 건너뛰도록 안전 가드도 추가.",
     "1.3.3": "sprint-close.sh 버그 수정 — /sprint close 시 adoption 트랙 PR 산출물(pr_*_result_feat-inv-*.json)이 sprint archive 디렉토리로 잘못 이동되던 문제를 수정. mv 루프에서 feat-inv-* 패턴을 명시적으로 제외하고, adoption 트랙이 active일 때 경고를 출력해 사용자가 인지하도록 한다. adoption 산출물은 /harness adopt-finish 시점에 archive/adoptions/<slug>/로 이동되어야 한다.",
     "1.3.2": "/qa 슬래시 커맨드에 loop 모드 추가 — adoption 트랙의 test_priority_queue.md를 일괄 소진. 형식: /qa loop <범위> [모드] (현재 범위는 all만, 모드는 test|review|guard|all, 생략 시 all). /sprint loop <N|all>과 일관: loop=자동 반복, all=처리 범위 전체. PR 모드는 generator를 부르지 않으므로 test FAIL이어도 다음 큐 항목으로 진행. sprint 트랙(diff_ref)에는 적용 안 됨.",
     "1.3.1": "upgrade.sh 버그 수정 — STRUCTURAL_FILES의 .claude/HARNESS.md 항목이 $SRC/.claude/HARNESS.md를 찾다 skip되어 1.0.0 이후 모든 업그레이드에서 HARNESS.md가 갱신되지 않던 문제를 해결. 소스의 harness_framework/CLAUDE.md를 .claude/HARNESS.md로 rename·복사하는 별도 분기를 추가(install.sh와 동일한 처리).",
