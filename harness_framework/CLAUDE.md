@@ -28,7 +28,7 @@ Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘�
 
 `.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**(스택 사실)를 정의한다. generator와 QA 3종은 세션 시작 시 이 파일을 읽어 스택을 따른다.
 
-`.claude/qa.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). `.claude/qa.md.template`을 복사해 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
+`.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). `.claude/qa-policy.md.template`을 복사해 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
 
 ## 상태 파일 규칙
 
@@ -97,7 +97,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 ## 중요 규칙
 
 - generator는 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
-- QA 3종은 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/qa.md` 순으로 읽는다. `qa.md`가 없거나 핵심 정보가 누락되면 추측 없이 작업을 거절하고 무엇이 필요한지 보고한다.
+- QA 3종은 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/qa-policy.md` 순으로 읽는다. `qa-policy.md`가 없거나 핵심 정보가 누락되면 추측 없이 작업을 거절하고 무엇이 필요한지 보고한다.
 - test-builder(Sprint 모드)는 검증 후 반드시 루트 `sprint_result.json`을 기록한다 (루프 가드와 sprint-close.sh가 이 파일을 읽음).
 - risk-reviewer / production-guard 산출물도 active 동안 루트에 둔다 (`sprint_review_result.json`, `sprint_guard_result.json`, `pr_*_result_<diff_ref>.json`). archive 경로에 직접 쓰지 않는다.
 - 기능 완료 후 `feature_list.json`의 해당 항목을 `completed: true`로 업데이트한다.

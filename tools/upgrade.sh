@@ -5,7 +5,7 @@
 # framework 파일을 업데이트합니다.
 #
 # 업그레이드 정책:
-#   - "structural" 파일 (훅·manifest.json·HARNESS.md·qa.md.template·.gitignore): 그대로 덮어쓴다
+#   - "structural" 파일 (훅·manifest.json·HARNESS.md·qa-policy.md.template·.gitignore): 그대로 덮어쓴다
 #   - "customizable" 파일 (stack.md·agents/*·commands/*·settings.json·.mcp.json):
 #       기존 파일 보존 + `<파일>.new`로 최신 버전을 병렬 생성 (사용자가 수동 머지)
 #   - "deprecated" 파일 (신버전에서 제거된 파일):
@@ -40,7 +40,7 @@ STRUCTURAL_FILES=(
   ".claude/hooks/project-abandon.sh"
   ".claude/manifest.json"
   ".claude/HARNESS.md"
-  ".claude/qa.md.template"
+  ".claude/qa-policy.md.template"
   ".claude/.gitignore"
 )
 
@@ -60,8 +60,10 @@ CUSTOMIZABLE_FILES=(
 )
 
 # deprecated: 신버전에서 제거된 파일. 대상에 남아있으면 .deprecated로 이름 변경 후 안내.
+# 주의: 사용자가 cp로 만든 .claude/qa.md(정책 파일)는 추적하지 않는다 — manifest.json의 changelog에서 수동 rename을 안내한다.
 DEPRECATED_FILES=(
   ".claude/agents/evaluator.md"
+  ".claude/qa.md.template"
 )
 
 print_help() {
@@ -83,7 +85,7 @@ ENV:
   HARNESS_REPO, HARNESS_BRANCH, LOCAL_SOURCE — install.sh와 동일
 
 업그레이드 정책:
-  structural  (훅·manifest·HARNESS.md·qa.md.template·.gitignore): 덮어쓴다
+  structural  (훅·manifest·HARNESS.md·qa-policy.md.template·.gitignore): 덮어쓴다
   customizable (stack.md·agents·commands·settings·.mcp.json): .new로 병렬 생성
   deprecated   (신버전에서 제거된 파일): <파일>.deprecated로 rename
   state        (current_project.txt·feature_list.json·claude-progress.txt·archive/): 건드리지 않음

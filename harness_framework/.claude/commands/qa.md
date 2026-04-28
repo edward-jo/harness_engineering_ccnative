@@ -3,7 +3,7 @@ QA 에이전트를 PR/diff 단위로 호출합니다. `$ARGUMENTS`의 첫 토큰
 ## 전제
 
 - `current_project.txt`가 비어있으면 중단하고 `/harness <아이디어>`를 안내하세요. 현재 sprint 컨텍스트 안에서만 동작합니다.
-- `.claude/qa.md`가 없으면 중단하고 `cp .claude/qa.md.template .claude/qa.md` 후 채우도록 안내하세요. QA 에이전트는 추측으로 진행하지 않습니다.
+- `.claude/qa-policy.md`가 없으면 중단하고 `cp .claude/qa-policy.md.template .claude/qa-policy.md` 후 채우도록 안내하세요. QA 에이전트는 추측으로 진행하지 않습니다.
 - 모든 산출물은 **루트 디렉터리**에 기록되며, `/sprint close` 시 `sprint-close.sh`가 archive로 함께 이동시킵니다.
 
 ## `<diff_ref>` 인자

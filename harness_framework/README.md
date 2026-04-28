@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 
 프레임워크 파일 (버전 고정):
 - `.claude/agents/`, `.claude/commands/`, `.claude/hooks/`
-- `.claude/stack.md`, `.claude/qa.md.template`, `.claude/settings.json`, `.claude/manifest.json`, `.claude/HARNESS.md`
+- `.claude/stack.md`, `.claude/qa-policy.md.template`, `.claude/settings.json`, `.claude/manifest.json`, `.claude/HARNESS.md`
 - `.mcp.json`
 
 상태 스캐폴드 (기존 파일이 있으면 **건드리지 않음**):
@@ -80,7 +80,7 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 
 | 분류 | 파일 | 동작 |
 |------|------|------|
-| **structural** | 훅(`hooks/*.sh`), `manifest.json`, `HARNESS.md`, `qa.md.template`, `.claude/.gitignore` | **덮어쓴다** (안전하게 최신으로 교체) |
+| **structural** | 훅(`hooks/*.sh`), `manifest.json`, `HARNESS.md`, `qa-policy.md.template`, `.claude/.gitignore` | **덮어쓴다** (안전하게 최신으로 교체) |
 | **customizable** | `stack.md`, `agents/*.md`, `commands/*.md`, `settings.json`, `.mcp.json` | **기존 보존 + `<파일>.new` 병렬 생성** (사용자가 수동 머지) |
 | **deprecated** | 신버전에서 제거된 파일 (예: v1.2.0의 `agents/evaluator.md`) | **`<파일>.deprecated`로 rename** (단순 삭제하지 않음, 사용자가 검토 후 처리) |
 | **state** | `current_project.txt`, `feature_list.json`, `claude-progress.txt`, `archive/` | **건드리지 않음** |
@@ -152,12 +152,12 @@ diff /path/to/installed/.claude/stack.md /path/to/installed/.claude/stack.md.new
 - 다른 스택으로 갈아끼우려면 이 파일만 수정하면 됩니다. 에이전트 프롬프트를 건드릴 필요 없음.
 - **Ready-made 템플릿**: [`examples/stack-templates/`](../examples/stack-templates/)에 React+FastAPI, Next.js+Prisma, Django+HTMX, Go+HTMX 등 바로 복사해 쓸 수 있는 `stack.md` 템플릿이 있습니다.
 
-### QA 정책 (qa.md)
+### QA 정책 (qa-policy.md)
 
-- `.claude/qa.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의합니다 (스택 사실은 stack.md, 정책·도메인은 qa.md로 책임 분리).
+- `.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의합니다 (스택 사실은 stack.md, 정책·도메인은 qa-policy.md로 책임 분리).
 - QA 에이전트(`test-builder`, `risk-reviewer`, `production-guard`)만 참조합니다. generator/planner는 읽지 않습니다.
 - 두 파일이 충돌하면 stack.md(스택 사실)를 우선합니다.
-- 시작: `cp .claude/qa.md.template .claude/qa.md` 후 도메인 정보를 채우세요. QA 에이전트는 비어있는 항목에 추측으로 진행하지 않습니다(미정인 항목은 "미정" 또는 "해당 없음"으로 명시).
+- 시작: `cp .claude/qa-policy.md.template .claude/qa-policy.md` 후 도메인 정보를 채우세요. QA 에이전트는 비어있는 항목에 추측으로 진행하지 않습니다(미정인 항목은 "미정" 또는 "해당 없음"으로 명시).
 
 ---
 
@@ -168,7 +168,7 @@ harness_framework/
 ├── .claude/
 │   ├── settings.json              # 훅 설정 (Stop, PostToolUse)
 │   ├── stack.md                   # 대상 스택 정의 (사용자 편집 가능)
-│   ├── qa.md.template             # QA 정책·도메인 컨텍스트 템플릿 (cp 후 qa.md로 사용)
+│   ├── qa-policy.md.template             # QA 정책·도메인 컨텍스트 템플릿 (cp 후 qa-policy.md로 사용)
 │   ├── agents/
 │   │   ├── planner.md             # 기획자: new/extend 두 모드
 │   │   ├── generator.md           # 구현자: stack.md 기반으로 코딩
@@ -195,7 +195,7 @@ harness_framework/
 ├── pr_test_result_*.json          # /qa test PR 결과 (close 시 archive로 이동)
 ├── pr_review_result_*.json        # /qa review PR 결과 (close 시 archive로 이동)
 ├── pr_guard_result_*.json         # /qa guard PR 결과 (close 시 archive로 이동)
-├── qa.md                          # QA 정책·도메인 컨텍스트 (사용자가 template 복사 후 채움)
+├── qa-policy.md                          # QA 정책·도메인 컨텍스트 (사용자가 template 복사 후 채움)
 ├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
 └── archive/                       # project 아카이브 (처음엔 없음, /sprint close 시 생성)
     ├── sprints/<project-slug>/
@@ -255,7 +255,7 @@ permissionMode: acceptEdits
 
 ### QA — 세 에이전트로 분리
 
-evaluator는 v1.2.0에서 세 QA 에이전트로 확장되었습니다. 각 에이전트는 **Sprint 모드**(현재 sprint 검증)와 **PR 모드**(diff 단위 검증)로 동작하며, `.claude/stack.md`와 `.claude/qa.md` 두 파일을 함께 읽습니다. 산출물은 active 동안 모두 **루트 디렉터리**에 기록되고, `/sprint close` 시 archive로 동반 이동됩니다.
+evaluator는 v1.2.0에서 세 QA 에이전트로 확장되었습니다. 각 에이전트는 **Sprint 모드**(현재 sprint 검증)와 **PR 모드**(diff 단위 검증)로 동작하며, `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일을 함께 읽습니다. 산출물은 active 동안 모두 **루트 디렉터리**에 기록되고, `/sprint close` 시 archive로 동반 이동됩니다.
 
 | 에이전트 | 역할 | Sprint 모드 산출물 | PR 모드 산출물 | 모델·권한 |
 |----------|------|-------------------|---------------|-----------|
@@ -369,7 +369,7 @@ claude
 | 파일 | 작성자 | 읽는 주체 | 수명 |
 |------|--------|-----------|------|
 | `.claude/stack.md` | 사용자 | generator, QA 3종 | framework 생명 주기 (프로젝트 사이에도 유지) |
-| `.claude/qa.md` | 사용자 (`qa.md.template`에서 복사) | QA 3종 | framework 생명 주기 |
+| `.claude/qa-policy.md` | 사용자 (`qa-policy.md.template`에서 복사) | QA 3종 | framework 생명 주기 |
 | `current_project.txt` | `/harness` 커맨드 | planner, generator, QA 3종, 훅 | project 시작~종료 |
 | `feature_list.json` | planner | generator, QA 3종 | project 동안 유지 (close 시 줄어듦) |
 | `sprint_plan.md` | planner | generator | project 동안 유지 |

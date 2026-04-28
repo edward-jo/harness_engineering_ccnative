@@ -1,11 +1,12 @@
 {
   "name": "claude-code-harness",
-  "version": "1.2.1",
-  "released": "2026-04-27",
+  "version": "1.2.2",
+  "released": "2026-04-28",
   "source": "https://github.com/edward-jo/harness_engineering_ccnative",
   "changelog": {
-    "1.2.1": "install.sh/upgrade.sh가 v1.2.0 신규 파일(test-builder/risk-reviewer/production-guard/commands/qa.md/qa.md.template)을 누락하던 버그 수정. upgrade.sh에 deprecated rename 정책 도입 — 신버전에서 제거된 파일(예: agents/evaluator.md)을 단순 삭제 대신 <파일>.deprecated로 rename하고 안내 출력.",
-    "1.2.0": "evaluator를 QA 3종(test-builder, risk-reviewer, production-guard)으로 확장. /sprint review를 QA 파이프라인으로 갱신. /sprint close 가드 강화(risk_grade=High / release_readiness=NO-GO 차단). /qa 슬래시 커맨드 신설(PR/diff 단위). qa.md.template 추가(QA 정책·도메인 컨텍스트 분리).",
+    "1.2.2": "QA 정책 파일을 qa.md → qa-policy.md로 rename(commands/qa.md 슬래시 커맨드와의 이름 충돌 방지). qa.md.template → qa-policy.md.template. upgrade.sh의 DEPRECATED_FILES에 옛 qa.md.template 등록(1.2.0/1.2.1 설치본은 자동 .deprecated 처리). 사용자가 이미 cp로 만든 .claude/qa.md는 추적되지 않으므로 수동으로 .claude/qa-policy.md로 rename 필요.",
+    "1.2.1": "install.sh/upgrade.sh가 v1.2.0 신규 파일(test-builder/risk-reviewer/production-guard/commands/qa.md/qa-policy.md.template)을 누락하던 버그 수정. upgrade.sh에 deprecated rename 정책 도입 — 신버전에서 제거된 파일(예: agents/evaluator.md)을 단순 삭제 대신 <파일>.deprecated로 rename하고 안내 출력.",
+    "1.2.0": "evaluator를 QA 3종(test-builder, risk-reviewer, production-guard)으로 확장. /sprint review를 QA 파이프라인으로 갱신. /sprint close 가드 강화(risk_grade=High / release_readiness=NO-GO 차단). /qa 슬래시 커맨드 신설(PR/diff 단위). qa-policy.md.template 추가(QA 정책·도메인 컨텍스트 분리).",
     "1.1.0": "/harness abandon 커맨드 추가 — 실패·중단 project를 archive/sprints/<slug>-abandoned-<ts>/로 버리고 같은 slug 재사용 가능. project-abandon.sh 헬퍼 신규.",
     "1.0.0": "첫 릴리스: project 격리·stack 추상화·bounded state·install.sh·manifest·upgrade.sh."
   },
@@ -25,7 +26,7 @@
       ".claude/hooks/sprint-close.sh",
       ".claude/hooks/project-abandon.sh",
       ".claude/stack.md",
-      ".claude/qa.md.template",
+      ".claude/qa-policy.md.template",
       ".claude/settings.json",
       ".claude/manifest.json",
       ".claude/.gitignore",
