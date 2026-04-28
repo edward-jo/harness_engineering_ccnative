@@ -32,6 +32,11 @@ if [ -z "$SLUG" ]; then
   exit 1
 fi
 
+if [ -f "current_adoption.txt" ] && [ -s "current_adoption.txt" ]; then
+  ADOPTION_SLUG=$(tr -d '[:space:]' < current_adoption.txt)
+  echo "[sprint-close] ⚠️  adoption 트랙 active ($ADOPTION_SLUG) — adoption PR 파일(feat-inv-*)은 보존됩니다." >&2
+fi
+
 if [ ! -f "sprint_result.json" ]; then
   echo "[sprint-close] sprint_result.json이 없습니다. /sprint review를 먼저 실행하세요." >&2
   exit 1
@@ -92,6 +97,9 @@ mv sprint_result.json "$TARGET/result.json"
 PR_MOVED=0
 shopt -s nullglob
 for f in pr_test_result_*.json pr_review_result_*.json pr_guard_result_*.json; do
+  case "$f" in
+    *feat-inv-*) continue ;;
+  esac
   mv "$f" "$TARGET/"
   PR_MOVED=$((PR_MOVED + 1))
 done
