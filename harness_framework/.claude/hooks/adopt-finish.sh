@@ -51,15 +51,23 @@ if [ ! -d "$TARGET" ]; then
 fi
 
 # 큐 가드: 자동화 부적합 섹션을 제외한 본 표에서 status가 done|skipped 외 항목이 있으면 차단
+# Status 컬럼 인덱스는 헤더 행을 파싱해 동적 탐지 (qa-surveyor 템플릿 변경 대비)
 INCOMPLETE=$(awk '
   /^## /                         { skip = ($0 ~ /자동화 부적합/) ? 1 : 0; next }
   skip == 1                      { next }
-  /^\|[[:space:]]*[Pp]riority/   { next }
-  /^\|[[:space:]]*-+/            { next }
-  /^\|/ {
+  /^\|[[:space:]]*[Pp]riority/ {
     n = split($0, c, "|")
-    # 6번째 cell이 Status 컬럼 (선두에 빈 셀 포함)
-    s = c[7]
+    for (i = 1; i <= n; i++) {
+      h = c[i]
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", h)
+      if (tolower(h) == "status") STATUS_COL = i
+    }
+    next
+  }
+  /^\|[[:space:]]*-+/            { next }
+  /^\|/ && STATUS_COL > 0 {
+    n = split($0, c, "|")
+    s = c[STATUS_COL]
     gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
     if (s != "done" && s != "skipped" && s != "") print NR ":" $0
   }
@@ -72,15 +80,23 @@ if [ -n "$INCOMPLETE" ] && [ "$FORCE_INCOMPLETE" -ne 1 ]; then
   exit 1
 fi
 
-# 카운트 추출
+# 카운트 추출 (Status 컬럼 동적 탐지)
 TESTS_DONE=$(awk '
   /^## /                         { skip = ($0 ~ /자동화 부적합/) ? 1 : 0; next }
   skip == 1                      { next }
-  /^\|[[:space:]]*[Pp]riority/   { next }
-  /^\|[[:space:]]*-+/            { next }
-  /^\|/ {
+  /^\|[[:space:]]*[Pp]riority/ {
     n = split($0, c, "|")
-    s = c[7]
+    for (i = 1; i <= n; i++) {
+      h = c[i]
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", h)
+      if (tolower(h) == "status") STATUS_COL = i
+    }
+    next
+  }
+  /^\|[[:space:]]*-+/            { next }
+  /^\|/ && STATUS_COL > 0 {
+    n = split($0, c, "|")
+    s = c[STATUS_COL]
     gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
     if (s == "done") d++
   }
@@ -90,11 +106,19 @@ TESTS_DONE=$(awk '
 TESTS_SKIPPED=$(awk '
   /^## /                         { skip = ($0 ~ /자동화 부적합/) ? 1 : 0; next }
   skip == 1                      { next }
-  /^\|[[:space:]]*[Pp]riority/   { next }
-  /^\|[[:space:]]*-+/            { next }
-  /^\|/ {
+  /^\|[[:space:]]*[Pp]riority/ {
     n = split($0, c, "|")
-    s = c[7]
+    for (i = 1; i <= n; i++) {
+      h = c[i]
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", h)
+      if (tolower(h) == "status") STATUS_COL = i
+    }
+    next
+  }
+  /^\|[[:space:]]*-+/            { next }
+  /^\|/ && STATUS_COL > 0 {
+    n = split($0, c, "|")
+    s = c[STATUS_COL]
     gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
     if (s == "skipped") k++
   }
