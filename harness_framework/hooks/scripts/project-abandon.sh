@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/../.."  # 하네스 루트로 이동
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
 
 PROGRESS_FILE="claude-progress.txt"
 

@@ -1,10 +1,25 @@
 # CLAUDE.md
 
-이 파일은 Claude Code가 `harness_framework/` 디렉토리를 열었을 때 자동으로 읽는 프로젝트 가이드입니다.
+이 파일은 Claude Code가 `harness_framework/` 디렉토리를 열었을 때 자동으로 읽는 **플러그인 소스 개발자용** 가이드입니다. 사용자가 플러그인을 사용하는 방법은 [`README.md`](README.md), 사용자 워크스페이스의 파일 규칙은 아래 "상태 파일 규칙" 표에 있습니다.
 
 ## 프로젝트 목적
 
-Claude Code 네이티브 방식으로 구현한 **하네스 엔지니어링 샘플**. Planner → Generator → QA(test-builder · risk-reviewer · production-guard) 구조로 스프린트 단위 개발을 자동화한다. 하나의 리포에서 여러 독립 아이디어(**project**)를 순차 진행할 수 있다.
+Claude Code **plugin**으로 배포되는 하네스 엔지니어링 framework. Planner → Generator → QA(test-builder · risk-reviewer · production-guard) 구조로 스프린트 단위 개발을 자동화한다. 하나의 사용자 워크스페이스에서 여러 독립 아이디어(**project**)를 순차 진행할 수 있다.
+
+## 플러그인 구조 (이 디렉토리 = 플러그인 루트)
+
+```
+.claude-plugin/plugin.json   — 플러그인 매니페스트
+agents/*.md                  — 서브에이전트 6종
+commands/*.md                — 슬래시 커맨드 3종
+hooks/hooks.json             — Stop / PostToolUse 등록
+hooks/scripts/*.sh           — 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 로 시작)
+templates/stack.md           — /harness init이 사용자 .claude/로 복사
+templates/qa-policy.md.template — /harness init이 사용자 .claude/로 복사
+.mcp.json                    — Playwright MCP 서버 설정
+```
+
+플러그인 캐시 내부 경로 참조 시 `${CLAUDE_PLUGIN_ROOT}` 환경변수 사용. 사용자 워크스페이스 참조 시 `${CLAUDE_PROJECT_DIR}`. 모든 훅 스크립트는 첫 줄에서 `cd "${CLAUDE_PROJECT_DIR:?}"`로 사용자 프로젝트 루트에 진입한다.
 
 ## 핵심 개념: Project
 
@@ -20,20 +35,24 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 
 | 에이전트 | 파일 | 트랙 | 역할 |
 |----------|------|------|------|
-| planner | `.claude/agents/planner.md` | sprint | **New**: 새 project 시작 (Sprint 1, feat-001부터) / **Extend**: max+1부터 이어서 |
-| generator | `.claude/agents/generator.md` | sprint | `.claude/stack.md` + `sprint_contract.md` 기반 기능 구현 + git 커밋 |
-| qa-surveyor | `.claude/agents/qa-surveyor.md` | adoption (단계 0~5) | 기존 코드베이스 진입 시 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성. 산출물: `qa-policy.md`(채움), `feature_inventory.json`, `test_priority_queue.md` |
-| test-builder | `.claude/agents/test-builder.md` | sprint(Sprint/PR) + adoption(PR) | 완료 기준 검증 + 회귀 자산. PR 모드는 인자 형태(`feat-inv-*` vs `<diff_ref>`)로 트랙 자동 분기. `sprint_result.json` / `pr_test_result_*.json` |
-| risk-reviewer | `.claude/agents/risk-reviewer.md` | sprint(Sprint/PR) + adoption(PR) | 누락 시나리오·장애 모드·컴플라이언스. `sprint_review_result.json` / `pr_review_result_*.json` |
-| production-guard | `.claude/agents/production-guard.md` | sprint(Sprint/PR) + adoption(PR, 보통 SKIP) | 부하·보안·릴리스 게이트. `sprint_guard_result.json` / `pr_guard_result_*.json` |
+| planner | `agents/planner.md` | sprint | **New**: 새 project 시작 (Sprint 1, feat-001부터) / **Extend**: max+1부터 이어서 |
+| generator | `agents/generator.md` | sprint | `.claude/stack.md` + `sprint_contract.md` 기반 기능 구현 + git 커밋 |
+| qa-surveyor | `agents/qa-surveyor.md` | adoption (단계 0~5) | 기존 코드베이스 진입 시 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성. 산출물: `qa-policy.md`(채움), `feature_inventory.json`, `test_priority_queue.md` |
+| test-builder | `agents/test-builder.md` | sprint(Sprint/PR) + adoption(PR) | 완료 기준 검증 + 회귀 자산. PR 모드는 인자 형태(`feat-inv-*` vs `<diff_ref>`)로 트랙 자동 분기. `sprint_result.json` / `pr_test_result_*.json` |
+| risk-reviewer | `agents/risk-reviewer.md` | sprint(Sprint/PR) + adoption(PR) | 누락 시나리오·장애 모드·컴플라이언스. `sprint_review_result.json` / `pr_review_result_*.json` |
+| production-guard | `agents/production-guard.md` | sprint(Sprint/PR) + adoption(PR, 보통 SKIP) | 부하·보안·릴리스 게이트. `sprint_guard_result.json` / `pr_guard_result_*.json` |
 
-## 스택 / QA 설정
+> 위 파일 경로는 모두 플러그인 루트(`harness_framework/`) 기준이다. 사용자 워크스페이스에는 이들 파일이 없다 — 플러그인 캐시(`~/.claude/plugins/cache/.../`)에서 자동 로드된다.
 
-`.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**(스택 사실)를 정의한다. generator와 QA 3종은 세션 시작 시 이 파일을 읽어 스택을 따른다.
+## 스택 / QA 설정 (사용자 워크스페이스의 `.claude/`)
 
-`.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). `.claude/qa-policy.md.template`을 복사해 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
+사용자 워크스페이스의 `.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**(스택 사실)를 정의한다. generator와 QA 3종은 세션 시작 시 이 파일을 읽어 스택을 따른다. 템플릿은 플러그인의 `templates/stack.md`에 있고 `/harness init`이 사용자 `.claude/`로 복사한다.
 
-## 상태 파일 규칙
+사용자 워크스페이스의 `.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). 사용자가 `.claude/qa-policy.md.template`을 복사해 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
+
+## 상태 파일 규칙 (사용자 워크스페이스 기준)
+
+아래 표의 모든 파일 경로는 **사용자가 claude를 띄운 워크스페이스 루트 (`${CLAUDE_PROJECT_DIR}`) 기준**이다. 플러그인 캐시는 read-only이며 상태를 보관하지 않는다.
 
 ### 루트 (active, hot path)
 
@@ -77,9 +96,9 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
 1. test-builder(Sprint 모드)가 루트 `sprint_result.json`을 `status: "FAIL"`로 기록하면
-2. Stop 훅(`.claude/hooks/loop-guard.sh`)이 `decision: "block"`을 반환해 Claude를 재실행시킨다
+2. Stop 훅(`hooks/scripts/loop-guard.sh`)이 `decision: "block"`을 반환해 Claude를 재실행시킨다
 3. 재실행된 Claude는 블록 사유를 읽고 generator로 수정 → test-builder로 재검증한다
-4. 최대 5회 반복 후 강제 종료된다 (`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS`)
+4. 최대 5회 반복 후 강제 종료된다 (`hooks/scripts/loop-guard.sh`의 `MAX_LOOPS`)
 
 자동 루프는 test-builder까지만 다룬다. risk-reviewer / production-guard는 사용자가 `/sprint review`로 명시 호출하거나 close 전에 직접 실행한다.
 
@@ -87,6 +106,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
 | 커맨드 | 동작 |
 |--------|------|
+| `/harness init` | 사용자 워크스페이스 부트스트랩 — `.claude/stack.md`, `.claude/qa-policy.md.template`, 상태 스캐폴드 생성. **이미 존재하는 파일은 덮어쓰지 않음.** |
 | `/harness [아이디어]` | 새 project 시작 (active 있으면 거부) |
 | `/harness extend [추가 아이디어]` | 현재 project에 sprint 추가 |
 | `/harness finish` | 정상 완료된 project를 `archive/sprints/<slug>/`로 이동 |
@@ -112,7 +132,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
 - generator는 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
 - **sprint_contract.md는 generator가 직접 작성·제안한다** (Anthropic Harness Design 원문: *"the generator and evaluator negotiated a sprint contract before any code was written"*). 파일이 없으면 generator가 `sprint_plan.md`를 보고 작성한 뒤 사용자 확인을 받고 코드를 시작한다. self-rubric은 `agents/generator.md`에 정의됨.
-- contract 작성 직후 `PostToolUse` 훅(`hooks/contract-lint.sh`)이 자동으로 모호 표현·도구 마커 누락·항목 수 부족을 stderr로 안내한다. 블로킹은 아니지만 경고가 있으면 즉시 보강한다.
+- contract 작성 직후 `PostToolUse` 훅(`hooks/scripts/contract-lint.sh`)이 자동으로 모호 표현·도구 마커 누락·항목 수 부족을 stderr로 안내한다. 블로킹은 아니지만 경고가 있으면 즉시 보강한다.
 - QA 3종은 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/qa-policy.md` 순으로 읽는다. `qa-policy.md`가 없거나 핵심 정보가 누락되면 추측 없이 작업을 거절하고 무엇이 필요한지 보고한다.
 - test-builder(Sprint 모드)는 검증 후 반드시 루트 `sprint_result.json`을 기록한다 (루프 가드와 sprint-close.sh가 이 파일을 읽음).
 - risk-reviewer / production-guard 산출물도 active 동안 루트에 둔다 (`sprint_review_result.json`, `sprint_guard_result.json`, `pr_*_result_<diff_ref>.json`). archive 경로에 직접 쓰지 않는다.

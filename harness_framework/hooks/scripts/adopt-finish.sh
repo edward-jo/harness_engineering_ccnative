@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/../.."
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
 
 PROGRESS_FILE="claude-progress.txt"
 FORCE_INCOMPLETE=0
@@ -76,7 +76,7 @@ INCOMPLETE=$(awk '
 if [ -n "$INCOMPLETE" ] && [ "$FORCE_INCOMPLETE" -ne 1 ]; then
   echo "[adopt-finish] 큐에 미완료 항목(pending/in_progress)이 남아있습니다:" >&2
   echo "$INCOMPLETE" | head -10 >&2
-  echo "[adopt-finish] 강제로 종료하려면: bash .claude/hooks/adopt-finish.sh --force-incomplete" >&2
+  echo "[adopt-finish] 강제로 종료하려면: /harness adopt-finish --force-incomplete" >&2
   exit 1
 fi
 

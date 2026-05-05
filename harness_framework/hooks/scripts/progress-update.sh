@@ -1,6 +1,8 @@
 #!/bin/bash
 # PostToolUse(Bash) 훅: git commit 감지 시 claude-progress.txt 업데이트
 
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
+
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 

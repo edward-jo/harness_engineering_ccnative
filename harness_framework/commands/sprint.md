@@ -51,9 +51,9 @@ QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack
   Stop 훅 기반 자동 루프를 시작합니다.
   1. generator 에이전트로 스프린트 [숫자]를 구현하세요.
   2. test-builder 에이전트(Sprint 모드)로 검증하고 루트 `sprint_result.json`을 업데이트하세요.
-  이후 Stop 훅(`.claude/hooks/loop-guard.sh`)이 자동으로 작동합니다:
+  이후 Stop 훅(`${CLAUDE_PLUGIN_ROOT}/hooks/scripts/loop-guard.sh`)이 자동으로 작동합니다:
   - `sprint_result.json`의 status가 FAIL이면 Claude를 재실행시켜 generator 수정 → test-builder 재검증을 반복합니다.
-  - PASS 또는 최대 5회 도달 시 루프가 종료됩니다 (`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS`).
+  - PASS 또는 최대 5회 도달 시 루프가 종료됩니다 (`${CLAUDE_PLUGIN_ROOT}/hooks/scripts/loop-guard.sh`의 `MAX_LOOPS`).
   루프 종료 후 사용자에게 `/sprint review` 잔여 단계(risk-reviewer, production-guard) 실행과 `/sprint close`를 안내하세요.
 
   > 자동 루프는 test-builder의 PASS만으로 끝납니다. risk-reviewer / production-guard는 사용자가 명시적으로 `/sprint review` 또는 close 전 호출로 실행해야 합니다.
@@ -70,7 +70,7 @@ QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack
   각 스프린트마다 (최대 재시도 5회):
     a. generator 에이전트로 해당 스프린트 구현
     b. test-builder 에이전트(Sprint 모드)로 검증 → 루트 sprint_result.json 업데이트
-    c. status == "PASS" → `.claude/hooks/sprint-close.sh` 실행으로 archive 이동 후 다음 스프린트로 진행
+    c. status == "PASS" → `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sprint-close.sh` 실행으로 archive 이동 후 다음 스프린트로 진행
        status == "FAIL" → 재시도 횟수 증가 후 a로 돌아감
        재시도 5회 초과 → 해당 스프린트를 BLOCKED로 표시하고 즉시 전체 루프 종료
   ```
@@ -94,10 +94,10 @@ QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack
   - 루트 `sprint_guard_result.json`이 없거나 `release_readiness in ["GO", "SKIP"]` (또는 `--force-nogo`)
 
   ```bash
-  bash .claude/hooks/sprint-close.sh
+  bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sprint-close.sh
   # 컨펌 후 강제 진행 시:
-  # bash .claude/hooks/sprint-close.sh --force-high-risk
-  # bash .claude/hooks/sprint-close.sh --force-nogo
+  # bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sprint-close.sh --force-high-risk
+  # bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/sprint-close.sh --force-nogo
   ```
 
   헬퍼는 다음을 archive로 이동합니다:

@@ -7,6 +7,9 @@
 # 매처: Write|Edit. 두 파일 외엔 즉시 무시.
 
 export LC_ALL=C
+
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
+
 INPUT=$(cat)
 
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)

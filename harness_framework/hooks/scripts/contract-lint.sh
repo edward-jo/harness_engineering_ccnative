@@ -11,6 +11,8 @@
 # UTF-8 한국어 패턴을 바이트 단위로 매칭해 BSD/GNU 차이를 피한다.
 export LC_ALL=C
 
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
+
 INPUT=$(cat)
 
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
