@@ -19,7 +19,7 @@ templates/qa-policy.md       — /harness init이 사용자 .claude/로 복사
 .mcp.json                    — Playwright MCP 서버 설정
 ```
 
-플러그인 캐시 내부 경로 참조 시 `${CLAUDE_PLUGIN_ROOT}` 환경변수 사용. 사용자 워크스페이스 참조 시 `${CLAUDE_PROJECT_DIR}`. 모든 훅 스크립트는 첫 줄에서 `cd "${CLAUDE_PROJECT_DIR:?}"`로 사용자 프로젝트 루트에 진입한다.
+플러그인 캐시 내부 경로 참조 시 `${CLAUDE_PLUGIN_ROOT}` 환경변수 사용. 사용자 워크스페이스 참조 시 `${CLAUDE_PROJECT_DIR}`. 두 변수는 **hook 컨텍스트에서만** Claude Code가 자동 주입한다 — 슬래시 커맨드에서 Bash로 직접 호출되는 스크립트(`harness-init.sh`, `project-abandon.sh`, `adopt-finish.sh`, `adopt-abandon.sh`, `sprint-close.sh`)는 `${CLAUDE_PROJECT_DIR:-$(pwd)}` 형태로 cwd fallback을 두고, `CLAUDE_PLUGIN_ROOT`가 필요하면 `$(dirname "${BASH_SOURCE[0]}")/../..`에서 derive한다. Hook 스크립트(loop-guard, contract-lint, inventory-lint, progress-update, session-end)는 `${CLAUDE_PROJECT_DIR:?}` 그대로 두어도 안전하다.
 
 ## 핵심 개념: Project
 

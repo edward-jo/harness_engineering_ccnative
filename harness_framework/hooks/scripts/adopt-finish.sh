@@ -9,7 +9,8 @@
 
 set -euo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
+# CLAUDE_PROJECT_DIR은 hook 컨텍스트에서만 자동 주입. 슬래시 커맨드 호출 시 cwd로 fallback.
+cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 PROGRESS_FILE="claude-progress.txt"
 FORCE_INCOMPLETE=0

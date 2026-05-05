@@ -11,14 +11,14 @@
 #   feature_list.json                      — 빈 배열 [] (planner가 채움)
 #   claude-progress.txt                    — 헤더 주석 (session-end.sh가 추가 기록)
 #
-# 환경:
-#   CLAUDE_PROJECT_DIR — claude 세션의 워크스페이스 루트 (필수)
-#   CLAUDE_PLUGIN_ROOT — 플러그인 설치 캐시 디렉토리 (필수, 템플릿 소스)
+# 환경 (둘 다 hook 컨텍스트에서만 Claude Code가 자동 주입. 슬래시 커맨드에서 호출될 때는 미설정이므로 fallback 사용):
+#   CLAUDE_PROJECT_DIR — claude 세션의 워크스페이스 루트. 미설정 시 cwd로 fallback.
+#   CLAUDE_PLUGIN_ROOT — 플러그인 설치 캐시 디렉토리(템플릿 소스). 미설정 시 스크립트 위치에서 derive.
 
 set -euo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this command must run inside a Claude Code session}"
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:?CLAUDE_PLUGIN_ROOT not set; this script must run via plugin}"
+cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
 if [ ! -d "$PLUGIN_ROOT/templates" ]; then
   echo "[harness-init] 플러그인 templates/ 디렉토리를 찾을 수 없습니다: $PLUGIN_ROOT/templates" >&2

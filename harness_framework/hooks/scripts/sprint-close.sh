@@ -7,7 +7,8 @@
 set -euo pipefail
 
 # 사용자 프로젝트 루트로 이동 (플러그인 캐시가 아니라 claude 세션의 워크스페이스).
-cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
+# CLAUDE_PROJECT_DIR은 hook 컨텍스트에서만 자동 주입. 슬래시 커맨드 호출 시 cwd로 fallback.
+cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 PROGRESS_FILE="claude-progress.txt"
 FORCE_HIGH_RISK=0
