@@ -122,6 +122,80 @@ diff /path/to/installed/.claude/stack.md /path/to/installed/.claude/stack.md.new
 
 ---
 
+## Uninstall (설치된 framework 제거)
+
+설치된 framework 파일을 제거하고, 사용자 커스터마이즈·상태 파일은 자동으로 백업합니다.
+
+```bash
+# 변경 내용 미리보기 (dry-run, 실제 제거 안 함)
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/uninstall.sh \
+  | bash -s -- --target /path/to/installed --dry-run
+
+# 실제 제거 (확인 프롬프트 있음)
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/uninstall.sh \
+  | bash -s -- --target /path/to/installed
+
+# 비대화식 (CI 등)
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/uninstall.sh \
+  | bash -s -- --target /path/to/installed --yes
+```
+
+### 제거 정책
+
+| 카테고리 | 대상 | 처리 |
+|----------|------|------|
+| **structural framework** | `.claude/hooks/*.sh`, `manifest.json`, `HARNESS.md`, `qa-policy.md.template`, `.gitignore` | 백업 없이 삭제 (install.sh로 동일 내용 재설치 가능) |
+| **customizable framework** | `.claude/stack.md`, `settings.json`, `agents/*`, `commands/*`, `.mcp.json` | **백업 후 삭제** (사용자 수정 가능성 있음) |
+| **user custom** | `.claude/settings.local.json`, `qa-policy.md`, `*.new`, `*.deprecated`, 사용자가 추가한 agents/commands/hooks 파일 등 | **백업 후 삭제** |
+| **state** | `current_project.txt`, `feature_list.json`, `claude-progress.txt`, `sprint_*`, `pr_*_result_*.json`, adoption 트랙 파일 | **백업 후 삭제** (`--keep-state` 시 보존) |
+| **보존 대상** | `archive/`, `app/`, 기타 사용자 코드 | **건드리지 않음** |
+
+### 플래그
+
+| 플래그 | 기본 | 의미 |
+|--------|------|------|
+| `--target <dir>` | `.` | 제거 대상 디렉토리 |
+| `--backup-dir <dir>` | `<target>/harness_backup/uninstall-<timestamp>` | 백업 위치 (기본은 다회 실행 안전한 timestamp 폴더) |
+| `--keep-state` | off | 상태 파일을 백업·삭제 모두 건너뜀 (재설치 후 작업을 이어가려는 경우) |
+| `--dry-run` | off | 실행 계획만 출력 |
+| `--yes`, `-y` | off | 확인 프롬프트 건너뛰기 |
+
+### 백업 디렉토리 구조
+
+```
+<target>/harness_backup/uninstall-YYYYMMDD-HHMMSS/
+├── .claude/                  # 백업된 customizable + user 파일
+│   ├── agents/               (수정된 framework 에이전트 + 사용자 추가 파일)
+│   ├── commands/
+│   ├── settings.json
+│   ├── settings.local.json
+│   ├── qa-policy.md
+│   └── stack.md
+├── .mcp.json
+├── current_project.txt       # state 파일 (--keep-state 미지정 시)
+├── feature_list.json
+├── claude-progress.txt
+├── sprint_plan.md            # 진행 중이던 sprint state (있으면)
+├── sprint_result.json
+└── pr_*_result_*.json
+```
+
+원래 경로 구조를 그대로 보존하므로, 다시 설치한 뒤 필요한 파일만 복원하기 쉽습니다.
+
+```bash
+# 예: 백업에서 settings.local.json만 복원
+cp /path/to/installed/harness_backup/uninstall-20260101-120000/.claude/settings.local.json \
+   /path/to/installed/.claude/
+```
+
+### 다시 설치
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash
+```
+
+---
+
 ## 사전 요구사항
 
 | 도구 | 버전 | 용도 |

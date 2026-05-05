@@ -9,6 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > **다른 리포에 framework만 설치하려면**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash` — 상세는 [`harness_framework/README.md`](harness_framework/README.md#install-다른-리포에-설치하기) 참조.
 >
 > **이미 설치된 framework 업그레이드**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/tools/upgrade.sh | bash -s -- --target /path/to/installed [--dry-run]` — 상세는 [`harness_framework/README.md`](harness_framework/README.md#upgrade-이미-설치된-framework-업그레이드) 참조.
+>
+> **설치된 framework 제거**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/uninstall.sh | bash -s -- --target /path/to/installed [--dry-run] [--keep-state]` — 사용자 커스터마이즈·상태 파일은 `harness_backup/uninstall-<ts>/`로 자동 백업. 상세는 [`harness_framework/README.md`](harness_framework/README.md#uninstall-설치된-framework-제거) 참조.
 
 ## 리포지토리 구조
 
