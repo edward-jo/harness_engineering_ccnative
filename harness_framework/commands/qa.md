@@ -2,7 +2,7 @@ QA 에이전트를 PR/diff 단위 또는 adoption 큐 항목 단위로 호출합
 
 ## 전제
 
-- `.claude/qa-policy.md`가 없으면 중단하고 `cp .claude/qa-policy.md.template .claude/qa-policy.md` 후 채우도록 안내하세요. QA 에이전트는 추측으로 진행하지 않습니다.
+- `.claude/qa-policy.md`가 없으면 중단하고 `/harness init` 실행 후 도메인 정보를 채우도록 안내하세요. QA 에이전트는 추측으로 진행하지 않습니다.
 - 호출 트랙 판별:
   - `current_adoption.txt`가 비어있지 않고 인자가 `feat-inv-NNN` 패턴이면 **adoption 트랙**.
   - 그 외에는 **sprint 트랙** — `current_project.txt`가 비어있으면 중단하고 `/harness <아이디어>`를 안내합니다.

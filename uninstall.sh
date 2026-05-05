@@ -5,11 +5,11 @@
 # harness_backup/uninstall-<timestamp>/ 디렉토리로 백업합니다.
 #
 # 정책 (install.sh / upgrade.sh의 카테고리와 동일):
-#   - structural framework (훅·manifest.json·HARNESS.md·qa-policy.md.template·.gitignore):
+#   - structural framework (훅·manifest.json·HARNESS.md·.gitignore):
 #       백업 없이 삭제 (install.sh로 동일 내용 재설치 가능)
-#   - customizable framework (stack.md·settings.json·agents·commands·.mcp.json):
+#   - customizable framework (stack.md·qa-policy.md·settings.json·agents·commands·.mcp.json):
 #       사용자가 수정했을 수 있으므로 backup으로 이동 후 삭제
-#   - user custom (.claude/settings.local.json·qa-policy.md·*.new·*.deprecated·
+#   - user custom (.claude/settings.local.json·*.new·*.deprecated·
 #       사용자가 추가한 agents/commands/hooks 등): backup으로 이동 후 삭제
 #   - state (current_project.txt·feature_list.json·claude-progress.txt·sprint_*·
 #       pr_*_result_*·adoption 트랙 파일): backup으로 이동 후 삭제
@@ -41,7 +41,6 @@ STRUCTURAL_FRAMEWORK_FILES=(
   ".claude/hooks/adopt-finish.sh"
   ".claude/hooks/adopt-abandon.sh"
   ".claude/manifest.json"
-  ".claude/qa-policy.md.template"
   ".claude/.gitignore"
   ".claude/HARNESS.md"
 )
@@ -49,6 +48,7 @@ STRUCTURAL_FRAMEWORK_FILES=(
 # customizable: install.sh가 배포하지만 사용자가 수정할 수 있는 파일. 백업.
 CUSTOMIZABLE_FRAMEWORK_FILES=(
   ".claude/stack.md"
+  ".claude/qa-policy.md"
   ".claude/settings.json"
   ".claude/agents/planner.md"
   ".claude/agents/generator.md"
@@ -100,11 +100,11 @@ FLAGS:
   --help, -h          이 메시지 출력
 
 정책:
-  structural framework (훅·manifest·HARNESS.md·qa-policy.md.template·.gitignore):
+  structural framework (훅·manifest·HARNESS.md·.gitignore):
                        백업 없이 삭제
-  customizable        (stack.md·settings.json·agents·commands·.mcp.json):
+  customizable        (stack.md·qa-policy.md·settings.json·agents·commands·.mcp.json):
                        backup 으로 이동 후 삭제
-  user custom         (.claude/settings.local.json·qa-policy.md·*.new·*.deprecated·
+  user custom         (.claude/settings.local.json·*.new·*.deprecated·
                        사용자가 추가한 파일): backup 으로 이동 후 삭제
   state               (current_project.txt·feature_list.json·claude-progress.txt·sprint_*·
                        pr_*_result_*·adoption 트랙 파일): backup 으로 이동 후 삭제

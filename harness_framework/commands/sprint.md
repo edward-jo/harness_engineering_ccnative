@@ -4,7 +4,7 @@
 
 모든 서브커맨드 시작 전 `current_project.txt`를 읽어 active project slug를 확인하세요. 비어있으면 중단하고 `/harness <아이디어>`를 안내합니다.
 
-QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일을 모두 읽어 동작합니다. `qa-policy.md`가 없으면 `.claude/qa-policy.md.template`에서 복사 후 채우도록 안내하세요.
+QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일을 모두 읽어 동작합니다. `qa-policy.md`가 없으면 `/harness init`을 실행해 템플릿을 배치하고 채우도록 안내하세요.
 
 ---
 

@@ -43,7 +43,7 @@ harness_framework/             ← 플러그인 소스 (= marketplace.json의 so
 ├── agents/                   (planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor)
 ├── commands/                 (/harness, /sprint, /qa)
 ├── hooks/                    (Stop / PostToolUse 훅 + 헬퍼 스크립트)
-├── templates/                (stack.md, qa-policy.md.template — /harness init이 사용자 .claude/로 복사)
+├── templates/                (stack.md, qa-policy.md — /harness init이 사용자 .claude/로 복사)
 └── .mcp.json                 (Playwright MCP 서버)
 
 examples/

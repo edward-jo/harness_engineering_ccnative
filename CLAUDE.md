@@ -33,7 +33,7 @@ harness_framework/                     ← 플러그인 소스 (= source 경로)
   hooks/hooks.json                     ← Stop / PostToolUse 등록
   hooks/scripts/*.sh                   ← 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 사용)
   templates/                           ← /harness init이 사용자 .claude/로 복사
-    stack.md, qa-policy.md.template
+    stack.md, qa-policy.md
   .mcp.json                            ← Playwright MCP 서버
 
 examples/

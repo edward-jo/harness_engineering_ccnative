@@ -15,7 +15,7 @@ commands/*.md                — 슬래시 커맨드 3종
 hooks/hooks.json             — Stop / PostToolUse 등록
 hooks/scripts/*.sh           — 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 로 시작)
 templates/stack.md           — /harness init이 사용자 .claude/로 복사
-templates/qa-policy.md.template — /harness init이 사용자 .claude/로 복사
+templates/qa-policy.md       — /harness init이 사용자 .claude/로 복사
 .mcp.json                    — Playwright MCP 서버 설정
 ```
 
@@ -48,7 +48,7 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 
 사용자 워크스페이스의 `.claude/stack.md`가 **대상 앱의 기술 스택·프로젝트 구조·개발 서버·검증 도구·관례**(스택 사실)를 정의한다. generator와 QA 3종은 세션 시작 시 이 파일을 읽어 스택을 따른다. 템플릿은 플러그인의 `templates/stack.md`에 있고 `/harness init`이 사용자 `.claude/`로 복사한다.
 
-사용자 워크스페이스의 `.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). 사용자가 `.claude/qa-policy.md.template`을 복사해 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
+사용자 워크스페이스의 `.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). `/harness init`이 템플릿을 배치하고, 사용자가 도메인 정보를 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
 
 ## 상태 파일 규칙 (사용자 워크스페이스 기준)
 
@@ -106,7 +106,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
 | 커맨드 | 동작 |
 |--------|------|
-| `/harness init` | 사용자 워크스페이스 부트스트랩 — `.claude/stack.md`, `.claude/qa-policy.md.template`, 상태 스캐폴드 생성. **이미 존재하는 파일은 덮어쓰지 않음.** |
+| `/harness init` | 사용자 워크스페이스 부트스트랩 — `.claude/stack.md`, `.claude/qa-policy.md`, 상태 스캐폴드 생성. **이미 존재하는 파일은 덮어쓰지 않음.** |
 | `/harness [아이디어]` | 새 project 시작 (active 있으면 거부) |
 | `/harness extend [추가 아이디어]` | 현재 project에 sprint 추가 |
 | `/harness finish` | 정상 완료된 project를 `archive/sprints/<slug>/`로 이동 |

@@ -18,10 +18,10 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/harness-init.sh"
 
 수행:
 - `.claude/stack.md` 템플릿 배치 (없을 때만) — 사용자가 자기 스택으로 편집해야 함
-- `.claude/qa-policy.md.template` 배치 (없을 때만) — 사용자가 `.claude/qa-policy.md`로 복사해 채움
+- `.claude/qa-policy.md` 템플릿 배치 (없을 때만) — 사용자가 도메인 정보를 채워야 함
 - 상태 스캐폴드 생성 (없을 때만): `current_project.txt`, `feature_list.json`, `claude-progress.txt`
 
-스크립트는 생성·보존 항목을 stdout으로 보고합니다. 결과를 사용자에게 그대로 보여준 뒤, `qa-policy.md` 미생성 안내가 보이면 `cp .claude/qa-policy.md.template .claude/qa-policy.md`를 권장하세요.
+스크립트는 생성·보존 항목을 stdout으로 보고합니다. 결과를 사용자에게 그대로 보여준 뒤, `.claude/stack.md`와 `.claude/qa-policy.md`를 프로젝트에 맞게 편집하도록 안내하세요.
 
 > 두 번째 실행: 사용자가 `stack.md`를 채워둔 상태에서 다시 init을 실행해도 모든 항목이 "보존"으로 표시되며 내용이 유지됩니다.
 

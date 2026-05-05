@@ -36,7 +36,7 @@ claude 세션 안에서:
 | 생성 항목 | 위치 | 의미 |
 |-----------|------|------|
 | `.claude/stack.md` | 사용자 프로젝트 | 기술 스택 템플릿 — **편집 필요** |
-| `.claude/qa-policy.md.template` | 사용자 프로젝트 | QA 정책 템플릿 — `cp ... qa-policy.md`로 복사 후 채움 |
+| `.claude/qa-policy.md` | 사용자 프로젝트 | QA 정책 템플릿 — **편집 필요** |
 | `current_project.txt` | 사용자 프로젝트 루트 | 빈 파일 (active project slug) |
 | `feature_list.json` | 사용자 프로젝트 루트 | `[]` (planner가 채움) |
 | `claude-progress.txt` | 사용자 프로젝트 루트 | 세션 로그 헤더 |
@@ -110,9 +110,9 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 
 | 카테고리 | 대상 | 처리 |
 |----------|------|------|
-| **structural framework** | `.claude/hooks/*.sh`, `manifest.json`, `HARNESS.md`, `qa-policy.md.template`, `.gitignore` | 백업 없이 삭제 (install.sh로 동일 내용 재설치 가능) |
-| **customizable framework** | `.claude/stack.md`, `settings.json`, `agents/*`, `commands/*`, `.mcp.json` | **백업 후 삭제** (사용자 수정 가능성 있음) |
-| **user custom** | `.claude/settings.local.json`, `qa-policy.md`, `*.new`, `*.deprecated`, 사용자가 추가한 agents/commands/hooks 파일 등 | **백업 후 삭제** |
+| **structural framework** | `.claude/hooks/*.sh`, `manifest.json`, `HARNESS.md`, `.gitignore` | 백업 없이 삭제 (install.sh로 동일 내용 재설치 가능) |
+| **customizable framework** | `.claude/stack.md`, `qa-policy.md`, `settings.json`, `agents/*`, `commands/*`, `.mcp.json` | **백업 후 삭제** (사용자 수정 가능성 있음) |
+| **user custom** | `.claude/settings.local.json`, `*.new`, `*.deprecated`, 사용자가 추가한 agents/commands/hooks 파일 등 | **백업 후 삭제** |
 | **state** | `current_project.txt`, `feature_list.json`, `claude-progress.txt`, `sprint_*`, `pr_*_result_*.json`, adoption 트랙 파일 | **백업 후 삭제** (`--keep-state` 시 보존) |
 | **보존 대상** | `archive/`, `app/`, 기타 사용자 코드 | **건드리지 않음** |
 
@@ -197,7 +197,7 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 - `.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의합니다 (스택 사실은 stack.md, 정책·도메인은 qa-policy.md로 책임 분리).
 - QA 에이전트(`test-builder`, `risk-reviewer`, `production-guard`)만 참조합니다. generator/planner는 읽지 않습니다.
 - 두 파일이 충돌하면 stack.md(스택 사실)를 우선합니다.
-- 시작: `cp .claude/qa-policy.md.template .claude/qa-policy.md` 후 도메인 정보를 채우세요. QA 에이전트는 비어있는 항목에 추측으로 진행하지 않습니다(미정인 항목은 "미정" 또는 "해당 없음"으로 명시).
+- 시작: `/harness init`이 템플릿을 배치하면 `.claude/qa-policy.md`를 직접 열어 도메인 정보를 채우세요. QA 에이전트는 비어있는 항목에 추측으로 진행하지 않습니다(미정인 항목은 "미정" 또는 "해당 없음"으로 명시).
 
 ---
 
@@ -237,7 +237,7 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 │       └── sprint-close.sh        # /sprint close 헬퍼
 ├── templates/
 │   ├── stack.md                   # 스택 정의 템플릿 (init이 사용자 .claude/로 복사)
-│   └── qa-policy.md.template      # QA 정책 템플릿 (init이 사용자 .claude/로 복사)
+│   └── qa-policy.md               # QA 정책 템플릿 (init이 사용자 .claude/로 복사)
 └── .mcp.json                      # Playwright MCP 서버 설정
 ```
 
@@ -247,8 +247,7 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 <your-project>/
 ├── .claude/
 │   ├── stack.md                   # 사용자 편집 (init이 템플릿 배치, 그 후 사용자 책임)
-│   ├── qa-policy.md.template      # init이 배치
-│   ├── qa-policy.md               # 사용자가 template 복사 후 채움
+│   ├── qa-policy.md               # 사용자 편집 (init이 템플릿 배치, 그 후 사용자 책임)
 │   └── loop_count.txt             # loop-guard.sh 자동 관리
 ├── current_project.txt            # 현재 active project slug
 ├── feature_list.json              # 현재 active project의 open/현재 sprint 항목만
@@ -386,7 +385,7 @@ claude
 /harness init
 ```
 
-생성된 `.claude/stack.md`를 열어 대상 앱의 기술 스택을 확인·수정하세요. 기본 템플릿은 React 18 + Vite + TypeScript + FastAPI + SQLAlchemy + SQLite + Tailwind입니다. 다른 스택이라면 [`../examples/stack-templates/`](../examples/stack-templates/)에서 가까운 템플릿을 골라 덮어쓰세요. 그리고 `cp .claude/qa-policy.md.template .claude/qa-policy.md` 후 도메인 정보를 채웁니다.
+생성된 `.claude/stack.md`를 열어 대상 앱의 기술 스택을 확인·수정하세요. 기본 템플릿은 React 18 + Vite + TypeScript + FastAPI + SQLAlchemy + SQLite + Tailwind입니다. 다른 스택이라면 [`../examples/stack-templates/`](../examples/stack-templates/)에서 가까운 템플릿을 골라 덮어쓰세요. 그리고 `.claude/qa-policy.md`를 열어 도메인 정보를 채웁니다.
 
 ### 1단계: 새 project 시작
 
@@ -459,7 +458,7 @@ claude
 | 파일 | 작성자 | 읽는 주체 | 수명 |
 |------|--------|-----------|------|
 | `.claude/stack.md` | 사용자 | generator, QA 3종 | framework 생명 주기 (프로젝트 사이에도 유지) |
-| `.claude/qa-policy.md` | 사용자 (`qa-policy.md.template`에서 복사) | QA 3종 | framework 생명 주기 |
+| `.claude/qa-policy.md` | 사용자 (init이 템플릿 배치) | QA 3종 | framework 생명 주기 |
 | `current_project.txt` | `/harness` 커맨드 | planner, generator, QA 3종, 훅 | project 시작~종료 |
 | `feature_list.json` | planner | generator, QA 3종 | project 동안 유지 (close 시 줄어듦) |
 | `sprint_plan.md` | planner | generator | project 동안 유지 |

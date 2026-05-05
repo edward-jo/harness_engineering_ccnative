@@ -6,7 +6,7 @@
 #
 # 스캐폴드 항목 (모두 멱등):
 #   .claude/stack.md                       — 스택 템플릿 (사용자가 채워야 함)
-#   .claude/qa-policy.md.template          — QA 정책 템플릿 (사용자가 .claude/qa-policy.md로 복사)
+#   .claude/qa-policy.md                   — QA 정책 템플릿 (사용자가 채워야 함)
 #   current_project.txt                    — 빈 파일 (active project slug 들어갈 자리)
 #   feature_list.json                      — 빈 배열 [] (planner가 채움)
 #   claude-progress.txt                    — 헤더 주석 (session-end.sh가 추가 기록)
@@ -51,8 +51,8 @@ install_template() {
   CREATED+=("$dest")
 }
 
-install_template "templates/stack.md"             ".claude/stack.md"
-install_template "templates/qa-policy.md.template" ".claude/qa-policy.md.template"
+install_template "templates/stack.md"     ".claude/stack.md"
+install_template "templates/qa-policy.md" ".claude/qa-policy.md"
 
 # 상태 스캐폴드 (이미 있으면 보존)
 if [ ! -e "current_project.txt" ]; then
@@ -96,14 +96,13 @@ if [ "${#PRESERVED[@]}" -gt 0 ]; then
   done
 fi
 
-# 후속 안내
+# 후속 안내 — 사용자가 손댔는지 알 수 없으므로 항상 편집 안내만 띄운다.
 NEXT_STEPS=()
-if [ ! -e ".claude/qa-policy.md" ]; then
-  NEXT_STEPS+=("QA 정책: cp .claude/qa-policy.md.template .claude/qa-policy.md 후 도메인에 맞게 채우세요.")
-fi
-# stack.md가 갓 깔린 템플릿(기본 React/FastAPI 예시)인지 휴리스틱 점검 — 사용자가 손댔는지 못 알 수 있으므로 안내만.
 if [ -f ".claude/stack.md" ]; then
   NEXT_STEPS+=("스택 설정: .claude/stack.md를 프로젝트의 실제 스택으로 편집하세요.")
+fi
+if [ -f ".claude/qa-policy.md" ]; then
+  NEXT_STEPS+=("QA 정책: .claude/qa-policy.md를 도메인에 맞게 채우세요.")
 fi
 NEXT_STEPS+=("새 project 시작: /harness <한 줄 아이디어>")
 
