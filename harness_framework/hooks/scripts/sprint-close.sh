@@ -6,7 +6,8 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/../.."  # 하네스 루트로 이동
+# 사용자 프로젝트 루트로 이동 (플러그인 캐시가 아니라 claude 세션의 워크스페이스).
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
 
 PROGRESS_FILE="claude-progress.txt"
 FORCE_HIGH_RISK=0
@@ -60,7 +61,7 @@ if [ -f "sprint_review_result.json" ]; then
   RISK_GRADE=$(jq -r '.risk_grade // ""' sprint_review_result.json)
   if [ "$RISK_GRADE" = "High" ] && [ "$FORCE_HIGH_RISK" -ne 1 ]; then
     echo "[sprint-close] risk-reviewer가 risk_grade=High로 보고했습니다. close를 중단합니다." >&2
-    echo "[sprint-close] 사용자 컨펌 후 진행하려면: bash .claude/hooks/sprint-close.sh --force-high-risk" >&2
+    echo "[sprint-close] 사용자 컨펌 후 진행하려면: /sprint close --force-high-risk" >&2
     exit 1
   fi
 fi
@@ -71,7 +72,7 @@ if [ -f "sprint_guard_result.json" ]; then
   RELEASE_READINESS=$(jq -r '.release_readiness // ""' sprint_guard_result.json)
   if [ "$RELEASE_READINESS" = "NO-GO" ] && [ "$FORCE_NOGO" -ne 1 ]; then
     echo "[sprint-close] production-guard가 release_readiness=NO-GO로 보고했습니다. close를 중단합니다." >&2
-    echo "[sprint-close] 사용자 컨펌 후 진행하려면: bash .claude/hooks/sprint-close.sh --force-nogo" >&2
+    echo "[sprint-close] 사용자 컨펌 후 진행하려면: /sprint close --force-nogo" >&2
     exit 1
   fi
 fi

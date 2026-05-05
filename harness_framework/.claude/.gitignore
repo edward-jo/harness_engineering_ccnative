@@ -1,5 +1,0 @@
-# runtime 상태: loop-guard.sh가 자동 생성·갱신
-loop_count.txt
-
-# user-local Claude Code 설정 (기기·사용자별 권한 부여 등)
-settings.local.json

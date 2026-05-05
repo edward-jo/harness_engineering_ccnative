@@ -4,36 +4,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 리포지토리 목적
 
-이 리포지토리는 **Claude Code 네이티브 방식으로 하네스(Harness)를 구현하는 방법**을 조사하고 실제로 작동하는 framework를 제공한다. Anthropic의 "Harness Design for Long-Running Apps" 아티클을 Agent SDK 없이 Claude Code 파일 기반 구성(agents, hooks, commands)으로 재현한다.
+이 리포지토리는 **Claude Code 네이티브 방식으로 하네스(Harness)를 구현하는 방법**을 조사하고 실제로 작동하는 framework를 **Claude Code plugin**으로 제공한다. Anthropic의 "Harness Design for Long-Running Apps" 아티클을 Agent SDK 없이 슬래시 커맨드·서브에이전트·훅·MCP 서버 묶음으로 재현한다.
 
-> **다른 리포에 framework만 설치하려면**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash` — 상세는 [`harness_framework/README.md`](harness_framework/README.md#install-다른-리포에-설치하기) 참조.
+> **사용자 설치** (claude 세션 안에서):
+> ```
+> /plugin marketplace add edward-jo/harness_engineering_ccnative
+> /plugin install harness@harness-engineering
+> /harness init        # 사용자 워크스페이스 부트스트랩 (기존 파일 절대 보존)
+> ```
+> 상세는 [`harness_framework/README.md`](harness_framework/README.md#install-claude-code-플러그인) 참조.
 >
-> **이미 설치된 framework 업그레이드**: `curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/tools/upgrade.sh | bash -s -- --target /path/to/installed [--dry-run]` — 상세는 [`harness_framework/README.md`](harness_framework/README.md#upgrade-이미-설치된-framework-업그레이드) 참조.
+> **업그레이드**: `/plugin update harness@harness-engineering` — 플러그인 캐시(`~/.claude/plugins/cache/`)가 read-only로 갱신되며, 사용자 워크스페이스의 상태(`current_project.txt`, `feature_list.json`, `archive/`, `.claude/stack.md`, `.claude/qa-policy.md`)는 영향받지 않는다.
 
 ## 리포지토리 구조
 
 ```
+.claude-plugin/
+  marketplace.json                     ← 마켓플레이스 카탈로그 (이 리포가 마켓플레이스 역할)
+
 research/
   harness-design-methodology.html      ← Agent SDK 기반 원본 방법론 조사 (리서치)
   harness-claude-code-native.html      ← Claude Code 네이티브 구현 방법 (리서치)
 
-harness_framework/                      ← 배포 대상 framework (빈 상태)
-  .claude/                              (agents, hooks, commands, stack.md, manifest.json)
-  상태 파일 (빈 것부터 시작)
+harness_framework/                     ← 플러그인 소스 (= source 경로)
+  .claude-plugin/plugin.json           ← 플러그인 매니페스트
+  agents/*.md                          ← 서브에이전트 6종
+  commands/*.md                        ← 슬래시 커맨드 3종 (/harness, /sprint, /qa)
+  hooks/hooks.json                     ← Stop / PostToolUse 등록
+  hooks/scripts/*.sh                   ← 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 사용)
+  templates/                           ← /harness init이 사용자 .claude/로 복사
+    stack.md, qa-policy.md.template
+  .mcp.json                            ← Playwright MCP 서버
 
 examples/
-  todo-manager/                         ← harness_framework/로 완성한 레퍼런스 project (5스프린트 22 feature)
-    app/                                (generator가 만든 실제 코드)
-    archive/sprints/todo-manager/       (스프린트별 스냅샷)
-  stack-templates/                      ← 바로 복사해 쓸 수 있는 stack.md 모음
+  todo-manager/                        ← 이 framework로 완성한 레퍼런스 project (5스프린트 22 feature)
+    app/                               (generator가 만든 실제 코드)
+    archive/sprints/todo-manager/      (스프린트별 스냅샷)
+  stack-templates/                     ← 바로 복사해 쓸 수 있는 stack.md 모음
     react-fastapi.md, nextjs-prisma.md, django.md, go-htmx.md
-
-install.sh                              ← 다른 리포에 framework를 설치하는 curl|bash 인스톨러
-tools/
-  upgrade.sh                            ← 설치된 framework를 최신 버전으로 업그레이드
 ```
 
-`research/` HTML은 독립 리서치 문서다. `harness_framework/`는 실제로 동작하는 framework이며, `examples/`는 그 결과물의 레퍼런스 스냅샷이다.
+`research/` HTML은 독립 리서치 문서다. `harness_framework/`는 실제로 동작하는 plugin source이며, `examples/`는 그 결과물의 레퍼런스 스냅샷이다.
+
+> **v1.x 자료**: 이전 배포 방식이던 `install.sh` / `tools/upgrade.sh` (curl|bash 인스톨러·업그레이더)는 v2.0.0에서 제거되었습니다. 설치·업데이트는 모두 Claude Code의 `/plugin marketplace add` + `/plugin install` + `/plugin update`로 일원화됩니다. 과거 install.sh로 깐 사용자 워크스페이스를 plugin으로 옮기는 절차는 [`harness_framework/README.md`](harness_framework/README.md#install-claude-code-플러그인) 끝의 "버전 1.x → 2.x 마이그레이션" 안내 참조.
 
 ## 핵심 아키텍처 개념 (문서 내용 요약)
 
@@ -54,11 +67,11 @@ tools/
 | `sprint_review_result.json` / `sprint_guard_result.json` | risk-reviewer / production-guard Sprint 모드 결과 (루트) |
 | `pr_*_result_<diff_ref>.json` | `/qa` PR 모드 산출물 (루트, close 시 archive 동반) |
 
-### Claude Code 네이티브 구성 요소
-- **에이전트**: `.claude/agents/*.md` (YAML 프론트매터 + 시스템 프롬프트)
-- **훅**: `.claude/settings.json` + `.claude/hooks/*.sh`
-- **슬래시 커맨드**: `.claude/commands/*.md`
-- **MCP 서버**: `.mcp.json`
+### Claude Code 네이티브 구성 요소 (플러그인 내부)
+- **에이전트**: `harness_framework/agents/*.md` (YAML 프론트매터 + 시스템 프롬프트)
+- **훅**: `harness_framework/hooks/hooks.json` + `harness_framework/hooks/scripts/*.sh` (경로는 `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/...` 절대형식)
+- **슬래시 커맨드**: `harness_framework/commands/*.md`
+- **MCP 서버**: `harness_framework/.mcp.json`
 
 ### 루프 구현 방식 3가지
 1. **Stop 훅 기반**: 루트 `sprint_result.json`의 `status=FAIL`이면 `decision: "block"` 반환 → Claude 재실행 (`harness_framework/`가 채택한 방식, test-builder가 PASS할 때까지 generator → test-builder 반복)

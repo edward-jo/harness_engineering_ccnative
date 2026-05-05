@@ -7,6 +7,8 @@ if [ "${CLAUDE_STOP_HOOK_ACTIVE}" = "1" ]; then
   exit 0
 fi
 
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
+
 INPUT=$(cat)
 LOOP_COUNT_FILE=".claude/loop_count.txt"
 MAX_LOOPS=5

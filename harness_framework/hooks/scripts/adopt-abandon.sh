@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/../.."
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
 
 PROGRESS_FILE="claude-progress.txt"
 

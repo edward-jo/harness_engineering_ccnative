@@ -1,7 +1,6 @@
-# Claude Code 하네스 (framework)
+# Claude Code 하네스 (plugin)
 
-Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework입니다.
-Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으로 Planner → Generator → QA(test-builder · risk-reviewer · production-guard) 루프를 구현합니다.
+Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework. Claude Code **plugin**으로 배포되며, 슬래시 커맨드(`/harness`, `/sprint`, `/qa`) + 서브에이전트(planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor) + 훅(Stop, PostToolUse)을 한 번에 묶어 Planner → Generator → QA 루프를 동작시킵니다.
 
 하나의 리포에서 **여러 독립 아이디어(project)**를 순차적으로 진행할 수 있으며, 각 project는 자체 Sprint 번호 공간을 갖고 `archive/sprints/<slug>/`에 영구 보관됩니다.
 
@@ -9,116 +8,83 @@ Agent SDK 없이 `.claude/` 파일 기반 구성(agents, hooks, commands)만으�
 
 ---
 
-## Install (다른 리포에 설치하기)
+## Install (Claude Code 플러그인)
 
-다른 개발자가 자신의 리포에 이 framework를 설치하려면 한 줄로 끝납니다.
+이 프레임워크는 **Claude Code plugin marketplace**로 배포됩니다. 플러그인은 `~/.claude/plugins/cache/`에 read-only 캐시되고, 사용자 프로젝트의 상태 파일(`current_project.txt`, `feature_list.json`, `archive/...`)은 각 워크스페이스 루트에 별도로 생성됩니다.
 
-```bash
-# 현재 디렉토리에 설치 (main 브랜치)
-curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash
+### 1. 마켓플레이스 등록 후 설치
 
-# 특정 디렉토리에 설치
-curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/install.sh | bash -s -- --target /path/to/my-repo
+claude 세션 안에서:
 
-# 개발 브랜치에서 설치 (main 머지 전) — --branch 플래그 사용 권장
-curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/framework/install.sh \
-  | bash -s -- --branch framework --target /tmp/curltest
+```
+/plugin marketplace add edward-jo/harness_engineering_ccnative
+/plugin install harness@harness-engineering
 ```
 
-> **주의**: `HARNESS_BRANCH=... curl | bash` 형식은 **작동하지 않습니다**. 환경변수는 파이프 왼쪽의 `curl` 프로세스에만 전달되고 `bash`는 못 받습니다. 환경변수를 쓰려면 `export`로 먼저 내보내거나(`export HARNESS_BRANCH=framework`) 파이프 오른쪽에서 설정하세요(`curl ... | HARNESS_BRANCH=framework bash ...`). 가장 간단한 방법은 위 예시처럼 **`--branch` 플래그**를 쓰는 것입니다.
+`/plugin install`은 기본적으로 **user scope**로 설치되어 사용자의 모든 워크스페이스에서 활성화됩니다. `/plugin` 메뉴의 Discover 탭에서 enter를 누르면 user / project / local scope를 대화형으로 선택할 수 있습니다.
 
-### 플래그
+### 2. 사용자 프로젝트 부트스트랩 (1회성)
 
-| 플래그 | 환경변수 | 기본값 | 설명 |
-|--------|----------|--------|------|
-| `--target <dir>` | — | `.` | 설치 대상 디렉토리 |
-| `--branch <name>` | `HARNESS_BRANCH` | `main` | 소스 브랜치 |
-| `--force` | — | off | 기존 `.claude/`를 덮어쓴다 (상태 파일은 항상 보존) |
-| `--help` | — | — | 사용법 출력 |
-| — | `HARNESS_REPO` | `edward-jo/harness_engineering_ccnative` | GitHub owner/repo |
-| — | `LOCAL_SOURCE` | — | 로컬 소스 경로 (개발·테스트용) |
+설치 직후, 하네스를 처음 쓸 워크스페이스에서 한 번만 실행:
 
-### 설치 내용
-
-프레임워크 파일 (버전 고정):
-- `.claude/agents/`, `.claude/commands/`, `.claude/hooks/`
-- `.claude/stack.md`, `.claude/qa-policy.md.template`, `.claude/settings.json`, `.claude/manifest.json`, `.claude/HARNESS.md`
-- `.mcp.json`
-
-상태 스캐폴드 (기존 파일이 있으면 **건드리지 않음**):
-- `current_project.txt` (빈 파일)
-- `feature_list.json` → `[]`
-- `claude-progress.txt` (헤더)
-
-설치 후 `.claude/manifest.json`의 `version` 필드가 박제되며, 추후 업그레이드 도구가 이 값을 참조합니다.
-
-### 설치 후
-
-```bash
-cd /path/to/installed/dir
-claude
-/harness <아이디어>
+```
+/harness init
 ```
 
----
+수행 결과 (모두 **이미 존재하면 덮어쓰지 않음**):
 
-## Upgrade (이미 설치된 framework 업그레이드)
+| 생성 항목 | 위치 | 의미 |
+|-----------|------|------|
+| `.claude/stack.md` | 사용자 프로젝트 | 기술 스택 템플릿 — **편집 필요** |
+| `.claude/qa-policy.md.template` | 사용자 프로젝트 | QA 정책 템플릿 — `cp ... qa-policy.md`로 복사 후 채움 |
+| `current_project.txt` | 사용자 프로젝트 루트 | 빈 파일 (active project slug) |
+| `feature_list.json` | 사용자 프로젝트 루트 | `[]` (planner가 채움) |
+| `claude-progress.txt` | 사용자 프로젝트 루트 | 세션 로그 헤더 |
 
-설치된 리포의 framework를 최신 버전으로 업그레이드합니다. `.claude/manifest.json`의 version을 기준으로 비교합니다.
+`/harness init`을 두 번째 이상 실행해도 사용자가 편집한 `stack.md`·`qa-policy.md`는 그대로 보존됩니다. 안전하게 다시 부를 수 있습니다.
 
-```bash
-# 변경 내용 미리보기 (dry-run)
-curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/tools/upgrade.sh \
-  | bash -s -- --target /path/to/installed --dry-run
+### 3. 새 project 시작
 
-# 실제 업그레이드
-curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnative/main/tools/upgrade.sh \
-  | bash -s -- --target /path/to/installed
+```
+/harness <한 줄 아이디어>
 ```
 
-### 업그레이드 정책
+이후 흐름은 [빠른 시작](#빠른-시작) 참고.
 
-| 분류 | 파일 | 동작 |
-|------|------|------|
-| **structural** | 훅(`hooks/*.sh`), `manifest.json`, `HARNESS.md`, `qa-policy.md.template`, `.claude/.gitignore` | **덮어쓴다** (안전하게 최신으로 교체) |
-| **customizable** | `stack.md`, `agents/*.md`, `commands/*.md`, `settings.json`, `.mcp.json` | **기존 보존 + `<파일>.new` 병렬 생성** (사용자가 수동 머지) |
-| **deprecated** | 신버전에서 제거된 파일 (예: v1.2.0의 `agents/evaluator.md`) | **`<파일>.deprecated`로 rename** (단순 삭제하지 않음, 사용자가 검토 후 처리) |
-| **state** | `current_project.txt`, `feature_list.json`, `claude-progress.txt`, `archive/` | **건드리지 않음** |
+### 설치 범위 (user vs project vs local)
 
-### 플래그
+| 범위 | 설정 위치 | 공유 | 사용 시나리오 |
+|------|-----------|------|---------------|
+| **user** (기본) | `~/.claude/settings.json`의 `enabledPlugins` | 개인 | 솔로 개발자, 컨설턴트 |
+| **project** | `<repo>/.claude/settings.json` (커밋됨) | 팀 공유 | 리포 clone한 모두에게 동일 워크플로 강제 |
+| **local** | `<repo>/.claude/settings.local.json` (gitignore) | 개인 | project scope의 개인 override |
+| **managed** | OS 시스템 경로 | 조직 정책 | IT 관리자 배포 |
 
-| 플래그 | 설명 |
-|--------|------|
-| `--target <dir>` | 업그레이드 대상 (기본: 현재 디렉토리) |
-| `--branch <name>` | 소스 브랜치 (기본: main) |
-| `--dry-run` | 실제 파일을 건드리지 않고 변경 요약만 출력 |
-| `--force-all` | customizable 파일도 `.new` 없이 바로 덮어쓰기 (**로컬 수정 유실 주의**) |
-| `--help` | 사용법 출력 |
+우선순위: `managed > local > project > user`. 같은 플러그인이 여러 범위에 등록되어 있으면 위 순서대로 enable/disable 결정.
 
-### `.new` 파일 병합 워크플로우
+team 차원 표준화를 원하면 `<repo>/.claude/settings.json`에:
 
-업그레이드 후 `.claude/`를 살펴보고 `.new` 파일을 처리하세요.
+```jsonc
+{
+  "extraKnownMarketplaces": {
+    "harness-engineering": {
+      "source": { "source": "github", "repo": "edward-jo/harness_engineering_ccnative" }
+    }
+  },
+  "enabledPlugins": { "harness@harness-engineering": true }
+}
+```
+를 커밋하면 됩니다.
 
-```bash
-# .new 목록 확인
-find /path/to/installed/.claude -name "*.new" -o -name ".mcp.json.new"
+### Update
 
-# 차이 보기
-diff /path/to/installed/.claude/stack.md /path/to/installed/.claude/stack.md.new
-
-# 선택:
-#   새 버전 채택:    mv stack.md.new stack.md
-#   기존 유지:       rm stack.md.new
-#   수동 머지:       편집 후 rm stack.md.new
+```
+/plugin update harness@harness-engineering
 ```
 
-### 동작 확인
+플러그인 캐시는 매 업데이트마다 덮어쓰여집니다. 사용자가 직접 편집하면 안 되는 파일: `agents/*.md`, `commands/*.md`, `hooks/*` (모두 플러그인 read-only 영역). 사용자 편집 영역은 워크스페이스의 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일뿐이며, 이들은 플러그인 캐시 바깥에 있어 업데이트 영향 없음.
 
-```bash
-# 이미 최신인 경우
-[upgrade] 현재: 1.0.0  →  소스: 1.0.0  (브랜치: main)
-이미 최신 버전입니다. 변경 없음.
-```
+> **버전 1.x → 2.x 마이그레이션**: v2.0.0에서 `install.sh` / `tools/upgrade.sh`는 제거되었고 모든 배포는 plugin marketplace로 일원화되었습니다. v1.x 시절 `install.sh`로 깐 워크스페이스가 있다면, `.claude/agents/*`, `.claude/commands/*`, `.claude/hooks/*`, `.claude/settings.json`, `.claude/manifest.json`, `.mcp.json`은 모두 플러그인이 대체하므로 (본인이 수정하지 않은 파일이라면) 안전하게 삭제하세요. `.claude/stack.md`, `.claude/qa-policy.md`, 그리고 루트의 상태 파일(`current_project.txt`, `feature_list.json`, `archive/`)은 그대로 유지하면 됩니다. 그 후 위 단계대로 `/plugin install` → `/harness init`을 실행하면 init이 누락된 스캐폴드만 채우고 기존 `.claude/stack.md` 등은 보존합니다.
 
 ---
 
@@ -163,49 +129,68 @@ diff /path/to/installed/.claude/stack.md /path/to/installed/.claude/stack.md.new
 
 ## 디렉토리 구조
 
+플러그인은 **두 종류의 디렉토리**에 걸쳐 있습니다: 플러그인 캐시(`${CLAUDE_PLUGIN_ROOT}`, read-only) + 사용자 워크스페이스(`${CLAUDE_PROJECT_DIR}`, 상태).
+
+### 플러그인 캐시 (`${CLAUDE_PLUGIN_ROOT}`, 자동 관리)
+
 ```
-harness_framework/
+harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cache/.../에 복사됨)
+├── .claude-plugin/
+│   └── plugin.json                # 플러그인 매니페스트
+├── agents/
+│   ├── planner.md                 # 기획자: new/extend 두 모드
+│   ├── generator.md               # 구현자: stack.md 기반으로 코딩
+│   ├── qa-surveyor.md             # QA 측량가: 기존 코드베이스 retrofit
+│   ├── test-builder.md            # QA: 회귀 자산 + sprint 완료 기준 검증
+│   ├── risk-reviewer.md           # QA: 누락 시나리오·장애 모드·릴리스 리스크
+│   └── production-guard.md        # QA: 부하·보안·릴리스 게이트
+├── commands/
+│   ├── harness.md                 # /harness (init/new/extend/finish/list/abandon/adopt/...)
+│   ├── sprint.md                  # /sprint (숫자/review/loop/close/status)
+│   └── qa.md                      # /qa (PR/diff 단위 test/review/guard/all + adoption loop)
+├── hooks/
+│   ├── hooks.json                 # Stop / PostToolUse 등록 (절대 경로: ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/...)
+│   └── scripts/
+│       ├── harness-init.sh        # /harness init 헬퍼 — 사용자 프로젝트 부트스트랩 (절대 덮어쓰지 않음)
+│       ├── loop-guard.sh          # Stop: FAIL 감지 시 루프 재실행
+│       ├── progress-update.sh     # PostToolUse(Bash): git commit 감지 로그
+│       ├── session-end.sh         # Stop: 세션 종료 로그 + rotation
+│       ├── contract-lint.sh       # PostToolUse(Write|Edit): sprint_contract.md lint
+│       ├── inventory-lint.sh      # PostToolUse(Write|Edit): feature_inventory / test_priority_queue lint
+│       ├── adopt-finish.sh        # /harness adopt-finish 헬퍼
+│       ├── adopt-abandon.sh       # /harness adopt-abandon 헬퍼
+│       ├── project-abandon.sh     # /harness abandon 헬퍼
+│       └── sprint-close.sh        # /sprint close 헬퍼
+├── templates/
+│   ├── stack.md                   # 스택 정의 템플릿 (init이 사용자 .claude/로 복사)
+│   └── qa-policy.md.template      # QA 정책 템플릿 (init이 사용자 .claude/로 복사)
+└── .mcp.json                      # Playwright MCP 서버 설정
+```
+
+### 사용자 워크스페이스 (`${CLAUDE_PROJECT_DIR}`, 상태)
+
+```
+<your-project>/
 ├── .claude/
-│   ├── settings.json              # 훅 설정 (Stop, PostToolUse)
-│   ├── stack.md                   # 대상 스택 정의 (사용자 편집 가능)
-│   ├── qa-policy.md.template             # QA 정책·도메인 컨텍스트 템플릿 (cp 후 qa-policy.md로 사용)
-│   ├── agents/
-│   │   ├── planner.md             # 기획자: new/extend 두 모드
-│   │   ├── generator.md           # 구현자: stack.md 기반으로 코딩
-│   │   ├── qa-surveyor.md         # QA 측량가: 기존 코드베이스 retrofit (도메인·매핑·우선순위)
-│   │   ├── test-builder.md        # QA: 회귀 자산 + sprint 완료 기준 검증 (Sprint/PR/adoption 모드)
-│   │   ├── risk-reviewer.md       # QA: 누락 시나리오·장애 모드·릴리스 리스크 (Sprint/PR 모드)
-│   │   └── production-guard.md    # QA: 부하·보안·릴리스 게이트 (Sprint/PR 모드)
-│   ├── hooks/
-│   │   ├── loop-guard.sh          # Stop 훅: FAIL 감지 시 루프 재실행
-│   │   ├── progress-update.sh     # PostToolUse(Bash): git commit 감지 로그
-│   │   ├── session-end.sh         # Stop: 세션 종료 로그 + rotation
-│   │   ├── contract-lint.sh       # PostToolUse(Write|Edit): sprint_contract.md 검증 가능성 lint
-│   │   ├── inventory-lint.sh      # PostToolUse(Write|Edit): feature_inventory.json·test_priority_queue.md 스키마 lint
-│   │   ├── adopt-finish.sh        # /harness adopt-finish 헬퍼 (큐 done 가드 + archive 이동)
-│   │   ├── adopt-abandon.sh       # /harness adopt-abandon 헬퍼 (timestamp archive)
-│   │   └── sprint-close.sh        # /sprint close 헬퍼 (archive 이동, QA 산출물 동반)
-│   └── commands/
-│       ├── harness.md             # /harness 슬래시 커맨드 (new/extend/finish/list/abandon)
-│       ├── sprint.md              # /sprint 슬래시 커맨드 (숫자/review/loop/close/status)
-│       └── qa.md                  # /qa 슬래시 커맨드 (PR/diff 단위 test/review/guard/all)
-├── .mcp.json                      # Playwright MCP 서버 설정
-├── current_project.txt            # 현재 active project slug (빈 문자열이면 없음)
+│   ├── stack.md                   # 사용자 편집 (init이 템플릿 배치, 그 후 사용자 책임)
+│   ├── qa-policy.md.template      # init이 배치
+│   ├── qa-policy.md               # 사용자가 template 복사 후 채움
+│   └── loop_count.txt             # loop-guard.sh 자동 관리
+├── current_project.txt            # 현재 active project slug
 ├── feature_list.json              # 현재 active project의 open/현재 sprint 항목만
-├── sprint_plan.md                 # 현재 project의 계획 (active일 때만 존재)
-├── sprint_contract.md             # 현재 sprint 완료 기준 (작업 중에만 존재)
-├── sprint_result.json             # test-builder(Sprint 모드) 산출물, 루프 가드가 읽음 (close 시 archive로 이동)
-├── sprint_review_result.json      # risk-reviewer(Sprint 모드) 산출물 (close 시 archive로 이동)
-├── sprint_guard_result.json       # production-guard(Sprint 모드) 산출물 (close 시 archive로 이동)
-├── pr_test_result_*.json          # /qa test PR 결과 (sprint=close 또는 adoption=adopt-finish 시 archive로 이동)
+├── sprint_plan.md                 # 현재 project 계획
+├── sprint_contract.md             # 현재 sprint 완료 기준
+├── sprint_result.json             # test-builder(Sprint 모드) 산출물, 루프 가드가 읽음
+├── sprint_review_result.json      # risk-reviewer(Sprint 모드) 산출물
+├── sprint_guard_result.json       # production-guard(Sprint 모드) 산출물
+├── pr_test_result_*.json          # /qa test PR 결과
 ├── pr_review_result_*.json        # /qa review PR 결과
 ├── pr_guard_result_*.json         # /qa guard PR 결과
-├── qa-policy.md                   # QA 정책·도메인 컨텍스트 (사용자가 template 복사 후 채움 — sprint와 adoption이 공유)
-├── current_adoption.txt           # 현재 active retrofit slug (비어있으면 없음, sprint와 공존 가능)
+├── current_adoption.txt           # 현재 active retrofit slug (sprint와 공존 가능)
 ├── feature_inventory.json         # qa-surveyor 코드베이스 매핑 (adoption 트랙)
 ├── test_priority_queue.md         # 회귀 테스트 우선순위 큐 (adoption 트랙)
 ├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
-└── archive/                       # 아카이브 (처음엔 없음, close/finish 시 생성)
+└── archive/                       # 아카이브 (close/finish 시 생성)
     ├── sprints/<project-slug>/
     │   ├── META.json
     │   ├── INDEX.json
@@ -255,7 +240,7 @@ planner 에이전트로 sprint_plan.md를 다시 읽고 다음 관점으로 보�
 - AI 통합 지점은 폴백 동작을 명시
 ```
 
-품질 보강이 반복적으로 필요하다면 `harness_framework/.claude/agents/planner.md` 끝에 **self-check rubric**을 추가해 매번 자동 검증되게 할 수도 있습니다 (이 파일은 upgrade 정책상 customizable이라 로컬 수정이 유실되지 않음).
+품질 보강이 반복적으로 필요하다면 플러그인을 fork해서 `agents/planner.md` 끝에 **self-check rubric**을 추가하면 매번 자동 검증됩니다. 단, 플러그인 캐시를 직접 편집하면 다음 `/plugin update` 시 유실되므로 fork 후 자체 마켓플레이스로 배포하는 방식이 안전합니다.
 
 ### Generator
 `.claude/stack.md`와 `sprint_contract.md`의 완료 기준을 읽고 기능을 구현합니다. 세션 시작 시 `current_project.txt`·`claude-progress.txt`를 반드시 읽습니다.
@@ -317,13 +302,17 @@ QA 에이전트는 모두 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파�
 ## 빠른 시작
 
 ```bash
-cd harness_framework
+cd <your-project>
 claude
 ```
 
-### 0단계 (선택): 스택 설정
+### 0단계: 부트스트랩 (1회성)
 
-`.claude/stack.md`를 열어 대상 앱의 기술 스택을 확인하고 필요하면 수정하세요. 기본값은 React 18 + Vite + TypeScript + FastAPI + SQLAlchemy + SQLite + Tailwind입니다.
+```
+/harness init
+```
+
+생성된 `.claude/stack.md`를 열어 대상 앱의 기술 스택을 확인·수정하세요. 기본 템플릿은 React 18 + Vite + TypeScript + FastAPI + SQLAlchemy + SQLite + Tailwind입니다. 다른 스택이라면 [`../examples/stack-templates/`](../examples/stack-templates/)에서 가까운 템플릿을 골라 덮어쓰세요. 그리고 `cp .claude/qa-policy.md.template .claude/qa-policy.md` 후 도메인 정보를 채웁니다.
 
 ### 1단계: 새 project 시작
 
@@ -424,41 +413,34 @@ claude
 // 선택 필드: "note" (long-form 검증 상세) — 루프 가드는 읽지 않음
 ```
 
-`sprint_review_result.json`(`risk_grade`, `missing_scenarios`, `recommended_tests`, `manual_qa_required`, ...)와 `sprint_guard_result.json`(`release_readiness`, `core_paths_changed`, `performance`, `security`, ...)의 상세 스키마는 각 에이전트 정의(`.claude/agents/risk-reviewer.md`, `.claude/agents/production-guard.md`)에 있습니다.
+`sprint_review_result.json`(`risk_grade`, `missing_scenarios`, `recommended_tests`, `manual_qa_required`, ...)와 `sprint_guard_result.json`(`release_readiness`, `core_paths_changed`, `performance`, `security`, ...)의 상세 스키마는 각 에이전트 정의(플러그인의 `agents/risk-reviewer.md`, `agents/production-guard.md`)에 있습니다.
 
 ---
 
 ## 커스터마이징
 
+플러그인 파일은 `~/.claude/plugins/cache/.../`에 read-only로 캐시되며 매 업데이트마다 덮어쓰여집니다. **사용자가 직접 편집해야 하는 파일은 워크스페이스의 `.claude/stack.md`와 `.claude/qa-policy.md` 두 개뿐입니다.** 그 외 항목(루프 횟수·rotation 임계·모델·에이전트 프롬프트)을 바꾸려면 플러그인 리포를 fork해 자체 마켓플레이스로 배포하세요.
+
 ### 다른 스택에 적용
 
-`.claude/stack.md`를 수정합니다. 특히 다음 섹션:
+워크스페이스의 `.claude/stack.md`를 수정합니다. 특히:
 1. **기술 스택** 표
 2. **프로젝트 구조** 트리
 3. **개발 서버** 포트·기동 명령
 4. **API 검증 도구** (test-builder가 사용)
 
-에이전트 프롬프트(agents/*.md)를 직접 수정할 필요는 없습니다.
+에이전트 프롬프트는 건드릴 필요 없습니다 — generator/QA가 세션마다 `.claude/stack.md`를 읽어 자동 추종합니다.
 
-### 루프 횟수 조정
+### 루프 횟수·rotation 임계·모델 등 플러그인 내부값
 
-`.claude/hooks/loop-guard.sh`의 `MAX_LOOPS` (기본 5).
+이들은 플러그인 캐시 파일(`hooks/scripts/loop-guard.sh`의 `MAX_LOOPS`, `session-end.sh`의 `MAX_LINES`, `agents/*.md`의 `model` 프론트매터)에 박혀 있습니다. 변경하려면:
 
-### Rotation 임계 조정
+1. 이 리포를 fork
+2. 해당 값을 수정하고 `.claude-plugin/plugin.json`의 `version` bump
+3. fork된 리포를 마켓플레이스로 등록 (`/plugin marketplace add <your-org>/<fork>`)
+4. fork된 플러그인 설치
 
-`.claude/hooks/session-end.sh`의 `MAX_LINES` (기본 200).
-
-### 모델 변경
-
-각 에이전트 파일의 `model` 프론트매터를 수정합니다.
-
-```yaml
-model: opus    # 기본값
-model: sonnet  # 비용 절감
-model: haiku   # 빠른 검증
-```
-
-> **팁**: Opus 4.6은 스프린트 구조 없이도 안정적으로 작동합니다. 모델이 업그레이드될수록 하네스 구성 요소를 단순화할 수 있습니다.
+캐시 파일을 직접 편집해도 되지만 다음 `/plugin update` 시 유실됩니다.
 
 ---
 

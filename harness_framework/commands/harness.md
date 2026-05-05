@@ -8,7 +8,24 @@
 
 ---
 
-## 모드 1: 새 project 시작 — `$ARGUMENTS`가 비어있거나 `list`/`extend`/`finish`/`abandon`/`adopt`/`adopt-finish`/`adopt-abandon`이 아닌 자유 텍스트
+## 모드 0: `init` — 사용자 프로젝트 부트스트랩 (1회성)
+
+플러그인을 처음 활성화한 직후 한 번 실행. **이미 존재하는 파일은 절대 덮어쓰지 않으므로** 여러 번 실행해도 안전합니다.
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/harness-init.sh"
+```
+
+수행:
+- `.claude/stack.md` 템플릿 배치 (없을 때만) — 사용자가 자기 스택으로 편집해야 함
+- `.claude/qa-policy.md.template` 배치 (없을 때만) — 사용자가 `.claude/qa-policy.md`로 복사해 채움
+- 상태 스캐폴드 생성 (없을 때만): `current_project.txt`, `feature_list.json`, `claude-progress.txt`
+
+스크립트는 생성·보존 항목을 stdout으로 보고합니다. 결과를 사용자에게 그대로 보여준 뒤, `qa-policy.md` 미생성 안내가 보이면 `cp .claude/qa-policy.md.template .claude/qa-policy.md`를 권장하세요.
+
+> 두 번째 실행: 사용자가 `stack.md`를 채워둔 상태에서 다시 init을 실행해도 모든 항목이 "보존"으로 표시되며 내용이 유지됩니다.
+
+## 모드 1: 새 project 시작 — `$ARGUMENTS`가 비어있거나 `init`/`list`/`extend`/`finish`/`abandon`/`adopt`/`adopt-finish`/`adopt-abandon`이 아닌 자유 텍스트
 
 1. `current_project.txt` 읽기.
 2. **비어있지 않으면 중단**하고 다음을 안내:
@@ -59,7 +76,7 @@
 
 실행:
 ```bash
-bash .claude/hooks/project-abandon.sh
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/project-abandon.sh"
 ```
 
 이 헬퍼는:
@@ -125,9 +142,9 @@ bash .claude/hooks/project-abandon.sh
 ## 모드 7: `adopt-finish` — adoption 정상 종료
 
 ```bash
-bash .claude/hooks/adopt-finish.sh
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh"
 # 큐에 미완료 항목이 있어도 강제 종료:
-# bash .claude/hooks/adopt-finish.sh --force-incomplete
+# bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh" --force-incomplete
 ```
 
 가드:
@@ -147,7 +164,7 @@ bash .claude/hooks/adopt-finish.sh
 ## 모드 8: `adopt-abandon` — adoption 실패·중단 처리
 
 ```bash
-bash .claude/hooks/adopt-abandon.sh
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-abandon.sh"
 ```
 
 가드 없음. 산출물(`feature_inventory.json`, `test_priority_queue.md`, `pr_*_result_feat-inv-*.json`)을 `archive/adoptions/<slug>-abandoned-<timestamp>/`로 통째 이동. META.json: `status: abandoned`, `abandoned: <date>`. 같은 base slug 재사용 가능.

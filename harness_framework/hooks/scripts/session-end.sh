@@ -1,6 +1,8 @@
 #!/bin/bash
 # Stop 훅: 세션 종료 시 진행 상황을 claude-progress.txt에 기록하고, 파일이 커지면 rotation.
 
+cd "${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR not set; this hook must run inside a Claude Code session}"
+
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 PROGRESS_FILE="claude-progress.txt"
 MAX_LINES=200

@@ -1,7 +1,4 @@
 {
-  "permissions": {
-    "defaultMode": "auto"
-  },
   "hooks": {
     "PostToolUse": [
       {
@@ -9,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\".claude/hooks/progress-update.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/progress-update.sh\"",
             "statusMessage": "진행 상황 기록 중..."
           }
         ]
@@ -19,12 +16,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\".claude/hooks/contract-lint.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/contract-lint.sh\"",
             "statusMessage": "sprint_contract.md 점검 중..."
           },
           {
             "type": "command",
-            "command": "\".claude/hooks/inventory-lint.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/inventory-lint.sh\"",
             "statusMessage": "feature_inventory.json / test_priority_queue.md 점검 중..."
           }
         ]
@@ -35,13 +32,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\".claude/hooks/loop-guard.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/loop-guard.sh\"",
             "timeout": 30,
             "statusMessage": "검증 결과 확인 중..."
           },
           {
             "type": "command",
-            "command": "\".claude/hooks/session-end.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-end.sh\"",
             "statusMessage": "세션 종료 처리 중..."
           }
         ]
