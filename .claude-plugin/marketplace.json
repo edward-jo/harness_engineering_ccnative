@@ -16,10 +16,7 @@
         "url": "https://github.com/edward-jo"
       },
       "homepage": "https://github.com/edward-jo/harness_engineering_ccnative",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/edward-jo/harness_engineering_ccnative"
-      },
+      "repository": "https://github.com/edward-jo/harness_engineering_ccnative",
       "license": "MIT",
       "keywords": ["harness", "sprint", "qa", "agentic-development", "long-running"]
     }
