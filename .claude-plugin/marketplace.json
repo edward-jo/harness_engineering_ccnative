@@ -1,7 +1,9 @@
 {
   "name": "harness-engineering",
+  "description": "Claude Code 네이티브 하네스 framework를 배포하는 셀프 마켓플레이스. 같은 GitHub 리포가 카탈로그(`/.claude-plugin/marketplace.json`)와 플러그인 소스(`/harness_framework/`)를 함께 호스트합니다.",
   "owner": {
-    "name": "Edward Jo"
+    "name": "Edward Jo",
+    "url": "https://github.com/edward-jo"
   },
   "plugins": [
     {
@@ -9,9 +11,17 @@
       "source": "./harness_framework",
       "description": "Claude Code 네이티브 하네스 framework. 슬래시 커맨드(/harness, /sprint, /qa) + 서브에이전트(planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor) + Stop/PostToolUse 훅으로 구성된 Sprint 단위 자동화.",
       "version": "2.0.0",
+      "author": {
+        "name": "Edward Jo",
+        "url": "https://github.com/edward-jo"
+      },
       "homepage": "https://github.com/edward-jo/harness_engineering_ccnative",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/edward-jo/harness_engineering_ccnative"
+      },
       "license": "MIT",
-      "keywords": ["harness", "sprint", "qa"]
+      "keywords": ["harness", "sprint", "qa", "agentic-development", "long-running"]
     }
   ]
 }
