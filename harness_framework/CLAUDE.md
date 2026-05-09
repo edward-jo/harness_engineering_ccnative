@@ -50,6 +50,8 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 
 사용자 워크스페이스의 `.claude/qa-policy.md`는 **QA 정책·도메인 컨텍스트·테스트 환경**을 정의한다. QA 3종만 참조한다 (generator/planner는 읽지 않음). `/harness init`이 템플릿을 배치하고, 사용자가 도메인 정보를 채운다. 두 파일이 충돌하면 stack.md(스택 사실)를 우선한다.
 
+`.claude/rules/`는 **선택 기능**으로, 프로젝트 고유의 코딩·운영·도메인 규약을 `*.md` 파일로 적는 자리다 (`README.md`와 `_`로 시작하는 파일 제외). generator는 세션 시작 시 모든 rule 파일을 읽고 구현 시 준수하며, **test-builder(Sprint 모드)는 sprint 종료 검증 시 generator의 변경분을 rule 대비 감사해 위반이 발견되면 `sprint_result.json.rule_violations`에 기록하고 `status`를 강제로 `FAIL`로 만든다** — 모든 완료 기준이 PASS여도 rule 위반이 있으면 sprint는 FAIL이며, 루프 가드가 generator를 다시 돌린다. `/harness init`이 빈 `.claude/rules/` 디렉토리와 안내용 `README.md`를 배치하고, 사용자가 실제 rule 파일을 추가하면 활성화된다 (rule 파일 0개면 검증 자동 비활성). PR 모드는 v2.2 기준 미적용 (sprint 모드만).
+
 ## 상태 파일 규칙 (사용자 워크스페이스 기준)
 
 아래 표의 모든 파일 경로는 **사용자가 claude를 띄운 워크스페이스 루트 (`${CLAUDE_PROJECT_DIR}`) 기준**이다. 플러그인 캐시는 read-only이며 상태를 보관하지 않는다.
@@ -62,7 +64,7 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 | `feature_list.json` | planner (+generator) | 현재 active project의 **open/현재 sprint 항목만**. close 시 줄어듦. |
 | `sprint_plan.md` | planner | 현재 project의 현재 계획. 첫 줄 `<!-- project: <slug> -->` 마커. |
 | `sprint_contract.md` | generator | 스프린트 시작 전 완료 기준 먼저 작성. close 시 archive로 이동. |
-| `sprint_result.json` | test-builder (Sprint 모드) | 반드시 `status, sprint, passed, total, failures` 포함. `regression_assets_added`, `manual_qa_required`, `note`는 선택. 루프 가드가 읽는다. |
+| `sprint_result.json` | test-builder (Sprint 모드) | 반드시 `status, sprint, passed, total, failures, rule_violations` 포함 (`rule_violations`는 `.claude/rules/` 사용 시 항상 배열로 직렬화, 미사용 시 빈 배열). `regression_assets_added`, `manual_qa_required`, `note`는 선택. **`rule_violations`가 비어있지 않으면 `status`는 반드시 `"FAIL"`.** 루프 가드가 읽는다. |
 | `sprint_review_result.json` | risk-reviewer (Sprint 모드) | `risk_grade`, `missing_scenarios`, `recommended_tests`, `manual_qa_required` 등. |
 | `sprint_guard_result.json` | production-guard (Sprint 모드) | `release_readiness`, `core_paths_changed`, `performance`, `security`. |
 | `pr_*_result_<인자>.json` | QA PR 모드 (`/qa`) | `<인자>`가 `feat-inv-NNN`이면 adoption, 그 외 sprint. close 또는 adopt-finish 시 각 archive로 이동. |
@@ -95,7 +97,7 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 
 Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
-1. test-builder(Sprint 모드)가 루트 `sprint_result.json`을 `status: "FAIL"`로 기록하면
+1. test-builder(Sprint 모드)가 루트 `sprint_result.json`을 `status: "FAIL"`로 기록하면 (완료 기준 위반 또는 `rule_violations` 비어있지 않음)
 2. Stop 훅(`hooks/scripts/loop-guard.sh`)이 `decision: "block"`을 반환해 Claude를 재실행시킨다
 3. 재실행된 Claude는 블록 사유를 읽고 generator로 수정 → test-builder로 재검증한다
 4. 최대 5회 반복 후 강제 종료된다 (`hooks/scripts/loop-guard.sh`의 `MAX_LOOPS`)
@@ -106,7 +108,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
 | 커맨드 | 동작 |
 |--------|------|
-| `/harness init` | 사용자 워크스페이스 부트스트랩 — `.claude/stack.md`, `.claude/qa-policy.md`, 상태 스캐폴드 생성. **이미 존재하는 파일은 덮어쓰지 않음.** |
+| `/harness init` | 사용자 워크스페이스 부트스트랩 — `.claude/stack.md`, `.claude/qa-policy.md`, `.claude/rules/README.md`, 상태 스캐폴드 생성. **이미 존재하는 파일은 덮어쓰지 않음.** |
 | `/harness [아이디어]` | 새 project 시작 (active 있으면 거부) |
 | `/harness extend [추가 아이디어]` | 현재 project에 sprint 추가 |
 | `/harness finish` | 정상 완료된 project를 `archive/sprints/<slug>/`로 이동 |
@@ -130,11 +132,11 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 
 ## 중요 규칙
 
-- generator는 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
+- generator는 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/rules/*.md`(있으면) → `sprint_contract.md` → `claude-progress.txt` 순으로 읽는다.
 - **sprint_contract.md는 generator가 직접 작성·제안한다** (Anthropic Harness Design 원문: *"the generator and evaluator negotiated a sprint contract before any code was written"*). 파일이 없으면 generator가 `sprint_plan.md`를 보고 작성한 뒤 사용자 확인을 받고 코드를 시작한다. self-rubric은 `agents/generator.md`에 정의됨.
 - contract 작성 직후 `PostToolUse` 훅(`hooks/scripts/contract-lint.sh`)이 자동으로 모호 표현·도구 마커 누락·항목 수 부족을 stderr로 안내한다. 블로킹은 아니지만 경고가 있으면 즉시 보강한다.
-- QA 3종은 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/qa-policy.md` 순으로 읽는다. `qa-policy.md`가 없거나 핵심 정보가 누락되면 추측 없이 작업을 거절하고 무엇이 필요한지 보고한다.
-- test-builder(Sprint 모드)는 검증 후 반드시 루트 `sprint_result.json`을 기록한다 (루프 가드와 sprint-close.sh가 이 파일을 읽음).
+- QA 3종은 새 세션 시작 시 반드시 `current_project.txt` → `.claude/stack.md` → `.claude/qa-policy.md` → `.claude/rules/*.md`(있으면, test-builder는 sprint 종료 검증에 사용) 순으로 읽는다. `qa-policy.md`가 없거나 핵심 정보가 누락되면 추측 없이 작업을 거절하고 무엇이 필요한지 보고한다.
+- test-builder(Sprint 모드)는 검증 후 반드시 루트 `sprint_result.json`을 기록한다 (루프 가드와 sprint-close.sh가 이 파일을 읽음). **`.claude/rules/`에 rule 파일이 1개 이상 있으면 generator의 변경분을 rule 대비 감사하고, 위반 1건 이상이면 모든 완료 기준 PASS여도 `status`를 강제로 `"FAIL"`로 기록한다.** 위반 상세는 `rule_violations` 배열에 `{rule_file, rule, location, evidence}` 형태로 적는다.
 - risk-reviewer / production-guard 산출물도 active 동안 루트에 둔다 (`sprint_review_result.json`, `sprint_guard_result.json`, `pr_*_result_<diff_ref>.json`). archive 경로에 직접 쓰지 않는다.
 - 기능 완료 후 `feature_list.json`의 해당 항목을 `completed: true`로 업데이트한다.
 - 스프린트 PASS 후에는 반드시 `/sprint close`를 실행해 archive로 이동해야 active 파일이 bounded로 유지된다. close 가드: `status==PASS`, `risk_grade!=High` (또는 `--force-high-risk`), `release_readiness in [GO, SKIP]` (또는 `--force-nogo`).

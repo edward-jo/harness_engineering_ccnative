@@ -7,6 +7,7 @@
 # 스캐폴드 항목 (모두 멱등):
 #   .claude/stack.md                       — 스택 템플릿 (사용자가 채워야 함)
 #   .claude/qa-policy.md                   — QA 정책 템플릿 (사용자가 채워야 함)
+#   .claude/rules/README.md                — rules 디렉토리 안내 (선택 기능)
 #   current_project.txt                    — 빈 파일 (active project slug 들어갈 자리)
 #   feature_list.json                      — 빈 배열 [] (planner가 채움)
 #   claude-progress.txt                    — 헤더 주석 (session-end.sh가 추가 기록)
@@ -53,6 +54,10 @@ install_template() {
 
 install_template "templates/stack.md"     ".claude/stack.md"
 install_template "templates/qa-policy.md" ".claude/qa-policy.md"
+
+# rules 디렉토리는 선택 기능. README만 안내용으로 깔아두고 사용자가 실제 rule 파일을 추가하면 동작.
+mkdir -p .claude/rules
+install_template "templates/rules-README.md" ".claude/rules/README.md"
 
 # 상태 스캐폴드 (이미 있으면 보존)
 if [ ! -e "current_project.txt" ]; then
@@ -103,6 +108,9 @@ if [ -f ".claude/stack.md" ]; then
 fi
 if [ -f ".claude/qa-policy.md" ]; then
   NEXT_STEPS+=("QA 정책: .claude/qa-policy.md를 도메인에 맞게 채우세요.")
+fi
+if [ -d ".claude/rules" ]; then
+  NEXT_STEPS+=("(선택) 프로젝트 규칙: .claude/rules/에 *.md를 추가하면 generator가 준수하고 test-builder가 위반 시 sprint를 FAIL시킵니다. 사용법은 .claude/rules/README.md 참조.")
 fi
 NEXT_STEPS+=("새 project 시작: /harness <한 줄 아이디어>")
 

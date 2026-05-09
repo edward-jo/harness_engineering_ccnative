@@ -17,18 +17,23 @@ color: green
 
 1. `current_project.txt` 읽기 — 현재 active project slug 확인. 비어있으면 중단하고 `/harness`를 안내한다.
 2. `.claude/stack.md` 읽기 — 대상 스택·프로젝트 구조·개발 서버 설정·관례를 파악한다. 이후 모든 구현은 이 파일을 기준으로 한다.
-3. **`sprint_contract.md` 처리** — 다음 분기로 동작한다:
+3. **`.claude/rules/` 처리** (선택 기능):
+   - 디렉토리가 없거나 `*.md` rule 파일이 0개 → 건너뛴다.
+   - `*.md` 파일이 있으면 `README.md`와 `_`로 시작하는 파일을 제외한 모든 rule 파일을 읽고 **준수해야 할 추가 제약**으로 취급한다.
+   - rule이 `stack.md` 또는 `sprint_contract.md`와 충돌하면 코드 작성 전에 사용자에게 보고하고 해소를 받는다 (한쪽을 정정하거나 우선 순위 합의).
+   - rule을 어긴 채 sprint를 끝내면 test-builder가 `rule_violations`로 잡아 sprint를 FAIL시키므로, 처음부터 어기지 않도록 한다.
+4. **`sprint_contract.md` 처리** — 다음 분기로 동작한다:
    - 파일이 **없으면** (또는 다른 sprint의 잔여물이면): `sprint_plan.md`에서 현재 sprint 항목을 추출해 **검증 가능한 완료 기준 목록을 작성**한다 (아래 "sprint_contract.md 작성 규칙" 준수). 작성 후 사용자에게 짧게 보고하고, 사용자가 명시적으로 "진행" 또는 보강 지시를 줄 때까지 코드 작성을 시작하지 않는다.
    - 파일이 **있고 현재 sprint와 일치하면**: 그대로 읽어 완료 기준을 따른다 (이미 합의된 상태).
-4. `claude-progress.txt` 읽기 (이전 세션 컨텍스트).
-5. `feature_list.json`에서 현재 스프린트 미완료 기능 파악.
+5. `claude-progress.txt` 읽기 (이전 세션 컨텍스트).
+6. `feature_list.json`에서 현재 스프린트 미완료 기능 파악.
    - `feature_list.json`은 현재 active project의 open/현재 sprint 항목만 담는다.
    - 과거 완료 스프린트의 기능은 `archive/sprints/<slug>/sprint_N/features.json`에 있으며 생성기는 읽지 않는다.
-6. `stack.md`의 시작 스크립트로 개발 서버 기동.
-7. 기능을 완료 기준 순서대로 구현.
-8. 각 기능 완료 후 `feature_list.json`의 `completed: true` 업데이트.
-9. 의미 있는 단위로 git 커밋 (`stack.md`의 커밋 메시지 관례를 따른다).
-10. `claude-progress.txt` 업데이트.
+7. `stack.md`의 시작 스크립트로 개발 서버 기동.
+8. 기능을 완료 기준 순서대로 구현. **3단계에서 로드한 rule들을 매 코드 작성·수정 시점에 자체 점검**한다.
+9. 각 기능 완료 후 `feature_list.json`의 `completed: true` 업데이트.
+10. 의미 있는 단위로 git 커밋 (`stack.md`의 커밋 메시지 관례를 따른다).
+11. `claude-progress.txt` 업데이트.
 
 ## sprint_contract.md 작성 규칙 (self-rubric)
 
@@ -86,3 +91,4 @@ color: green
 - 타입 안전성과 에러 핸들링은 `stack.md`의 관례 섹션을 따른다.
 - `stack.md`에 명시되지 않은 선택(라이브러리·디렉토리 명 등)은 해당 스택의 표준 관행을 따른다.
 - `stack.md`와 상충하는 지시가 있으면 **`stack.md`를 우선**하고 사용자에게 알린다.
+- `.claude/rules/`의 모든 rule 파일은 **stack.md와 동등한 강제력**으로 준수한다. rule을 위반한 채 sprint를 끝내면 test-builder가 `rule_violations`로 잡아 sprint를 FAIL시키며, FAIL은 루프 가드를 트리거해 다시 자신에게 돌아온다 — 처음부터 어기지 않는 것이 비용이 가장 적다.

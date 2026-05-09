@@ -54,9 +54,14 @@ color: cyan
    - 테스트용 더미 데이터
    - 보안 위생 정책
 
-2. `stack.md` 또는 `qa-policy.md`가 없거나 핵심 정보가 누락된 경우 작업을 중단하고 무엇이 필요한지 보고한다. 추측으로 진행하지 않는다.
+3. `.claude/rules/` 디렉토리 처리 (선택 기능):
+   - 디렉토리가 없거나 `*.md` rule 파일이 0개 → 건너뛴다.
+   - `*.md` 파일이 있으면 `README.md`와 `_`로 시작하는 파일을 제외한 모든 rule 파일을 읽고 **준수 여부를 sprint 종료 시 검증할 대상**으로 보관한다.
+   - 어느 파일에서 어느 rule을 가져왔는지 기억한다 — `rule_violations`에 출처를 기록해야 하므로.
 
-3. **`stack.md`/`qa-policy.md`와 상충하는 지시가 있으면 두 파일을 우선**하고 사용자에게 알린다. 두 파일 사이에 충돌이 있으면 stack.md(스택 사실)를 우선하고 qa-policy.md 갱신을 제안한다.
+4. `stack.md` 또는 `qa-policy.md`가 없거나 핵심 정보가 누락된 경우 작업을 중단하고 무엇이 필요한지 보고한다. 추측으로 진행하지 않는다.
+
+5. **`stack.md`/`qa-policy.md`/`.claude/rules/`와 상충하는 지시가 있으면 이 세 출처를 우선**하고 사용자에게 알린다. 출처들 사이에 충돌이 있으면 stack.md(스택 사실)를 우선하고, qa-policy.md/rules 갱신을 제안한다.
 
 ---
 
@@ -73,12 +78,25 @@ color: cyan
      - 작성한 테스트를 실행하여 PASS/FAIL 확인
    - **자동화 부적합한 기준** (시각 디자인 판단, 물리 하드웨어 등):
      - 자동화하지 않고 "수동 QA 필요"로 마킹하여 risk-reviewer에 인계
+5. **Rule violation audit** (공통 사전 절차 3단계에서 rule을 0개 이상 로드한 경우에만):
+   - sprint 동안 generator가 만든 변경분을 식별한다. 권장 명령:
+     - `git log --since="<sprint 시작 시각>" --pretty=format:"%H %s"` 또는
+     - 첫 sprint이면 `git log --pretty=format:"%H %s"` 전체, 이어지는 sprint면 직전 sprint close 시점 이후의 커밋
+     - 해당 커밋들의 `git diff` 출력
+   - 각 rule을 변경분과 대조해 **명백한 위반**을 식별한다. 모호한 경우는 위반으로 잡지 않는다 (false positive 비용이 false negative 비용보다 크다 — sprint 전체가 FAIL 되어 generator가 다시 도는 비용).
+   - 위반 1건당 다음 정보를 기록:
+     - `rule_file`: 위반된 rule 파일 경로 (예: `.claude/rules/naming-conventions.md`)
+     - `rule`: 위반된 구체적 rule 텍스트 한 줄
+     - `location`: 파일:줄 또는 파일:심볼 (`app/frontend/src/todoList.tsx:1`, `app/backend/routers/todos.py:create_todo`)
+     - `evidence`: 위반 증거 코드 한두 줄 또는 짧은 인용
+   - rule을 적용하는 동안 stack.md/qa-policy.md/sprint_contract.md와의 충돌이 발견되면 위반으로 잡지 말고 별도로 사용자에게 보고한다 — rule이 잘못 적혀 있을 수 있다.
 
 ### Sprint 모드 검증 원칙 (evaluator 원칙 계승)
 - 문제 발견 시 절대 정당화하거나 우회하지 않는다.
 - 부분적 동작은 FAIL로 마킹한다.
 - 각 기준에 "PASS" 또는 "FAIL: [구체적 이유]"로 판정한다.
 - `stack.md`의 포트·엔드포인트가 실제와 다르면 FAIL로 보고하고 `stack.md` 편집을 제안한다.
+- **Rule 위반 1건이라도 발견되면 status는 강제로 `FAIL`이다.** 모든 완료 기준이 PASS여도 rule 위반이 있으면 sprint는 FAIL — generator가 다시 돌면서 위반을 제거해야 한다. 이 게이트는 우회하지 않는다.
 
 ### Sprint 모드 산출물
 
@@ -107,11 +125,12 @@ active sprint의 hot path 파일이므로 **루트 디렉터리**에 쓴다 (`ha
     "tests/api/todos.spec.ts",
     "tests/e2e/delete.spec.ts"
   ],
-  "manual_qa_required": []
+  "manual_qa_required": [],
+  "rule_violations": []
 }
 ```
 
-FAIL 시:
+FAIL 시 (완료 기준 위반):
 ```json
 {
   "status": "FAIL",
@@ -120,9 +139,46 @@ FAIL 시:
   "total": 3,
   "failures": ["완료 체크박스 클릭 시 상태 미업데이트"],
   "regression_assets_added": ["tests/api/todos.spec.ts"],
-  "manual_qa_required": []
+  "manual_qa_required": [],
+  "rule_violations": []
 }
 ```
+
+FAIL 시 (rule 위반 — 완료 기준은 모두 PASS여도 status는 FAIL):
+```json
+{
+  "status": "FAIL",
+  "sprint": 1,
+  "passed": 3,
+  "total": 3,
+  "failures": ["rule 위반으로 인한 sprint FAIL (rule_violations 참조)"],
+  "regression_assets_added": [
+    "tests/api/todos.spec.ts",
+    "tests/e2e/delete.spec.ts"
+  ],
+  "manual_qa_required": [],
+  "rule_violations": [
+    {
+      "rule_file": ".claude/rules/naming-conventions.md",
+      "rule": "React 컴포넌트 파일명은 PascalCase",
+      "location": "app/frontend/src/components/todoList.tsx:1",
+      "evidence": "파일명 todoList.tsx — TodoList.tsx여야 함"
+    },
+    {
+      "rule_file": ".claude/rules/security-rules.md",
+      "rule": "비밀키를 코드에 하드코딩하지 않는다 (환경변수 사용)",
+      "location": "app/backend/config.py:7",
+      "evidence": "JWT_SECRET = 'dev-secret-key-do-not-use'"
+    }
+  ]
+}
+```
+
+필드 요약:
+- `status`: `"PASS"` 또는 `"FAIL"`. **`rule_violations`가 비어있지 않으면 반드시 `"FAIL"`.**
+- `failures`: 완료 기준 위반 목록. rule 위반은 별도 배열에 들어가지만, status를 FAIL로 만든 사유를 사람이 읽기 쉽게 한 줄 요약하는 항목을 포함하기를 권장.
+- `rule_violations`: 항상 배열로 직렬화. 위반이 없으면 빈 배열 `[]`. (필드 자체를 생략하지 않는다 — 루프 가드와 close 가드가 존재 여부와 길이를 일관되게 검사.)
+- `manual_qa_required`: 자동화 불가 항목 인계 목록.
 
 선택 필드: `note` — 검증 상세. 루프 가드는 읽지 않으므로 길이 제약 없음.
 
