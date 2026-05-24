@@ -20,6 +20,20 @@
 | E2E 테스트 | Playwright (MCP) | <예: `cd app/frontend && npx playwright test`> |
 | 커버리지 리포트 | <예: pytest-cov> | <예: `pytest --cov=backend`> |
 
+## 1.5 Walkthrough 실행 도구 (qa-surveyor 단계 4.5 가 참조)
+
+`/harness adopt` 의 P1 happy path walkthrough 가 사용할 도구를 명시한다. 비어있으면 qa-surveyor 가 단계 4.5 진행 전에 사용자에게 채우도록 요청한다.
+
+| 항목 | 값 |
+|------|------|
+| 실행 도구 | <예: 브라우저 자동화 MCP / CLI runner / 수동 클릭 + 캡처> |
+| Evidence 캡처 방식 | <예: 도구의 screenshot API / 수동 cmd+shift+4 + 콘솔 복사> |
+| 인증 시나리오 | <예: staging 자격증명 필수 / mock 백엔드 가능 / 둘 다 지원> |
+| 결함 backlog 등록 위치 | <예: `backlog.md` / 외부 이슈 트래커 URL / 해당 없음> |
+| 일반화 메모 | walkthrough 도구는 프로젝트 스택별로 결정. evidence 는 항상 `archive/adoptions/<slug>/walkthroughs/<feat-id>/` 에 저장. |
+
+> `1번` 섹션의 E2E 테스트 도구와 같을 수도, 다를 수도 있다. E2E 는 회귀 자산 작성용(test-builder), walkthrough 는 adopt 단계의 결함 발견용(qa-surveyor). 같은 도구를 양쪽에 쓰면 fixture 재사용이 쉬워진다.
+
 ## 2. 테스트 디렉터리 구조 (test-builder가 참조)
 
 ```
@@ -294,3 +308,12 @@ QA 에이전트가 알아야 할 프로젝트 특화 주의사항:
 3. 권한 분리 매트릭스의 핵심 행 2~3개?
 
 이 5개 섹션이 채워지면 qa-surveyor가 `feature_inventory.json`과 `test_priority_queue.md`를 작성할 수 있습니다. 나머지 섹션은 retrofit 도중 점진 보강 가능.
+
+### 섹션 1.5 (Walkthrough 실행 도구) 인터뷰 — 단계 4.5 진입 전
+
+1. P1 happy path 시나리오를 실제 실행할 도구는? (브라우저 자동화 MCP / CLI runner / 수동 클릭 등)
+2. Evidence 캡처(스크린샷·콘솔·네트워크) 는 어떻게 수행하나? 도구 API 가 있는가, 수동 캡처가 fallback 인가?
+3. walkthrough 실행 시 인증은 어떻게 통과하나? (staging 자격증명 / mock 백엔드 / 둘 다 가능)
+4. walkthrough 에서 결함 발견 시 backlog 등록 위치는? (`backlog.md` / 외부 이슈 트래커 / 직접 fix 시작)
+
+이 섹션이 비어있으면 qa-surveyor 가 단계 4.5 직전에 다시 묻습니다 (인터뷰 부재로 walkthrough 단계 자체를 건너뛰지 않습니다 — 도구 정보 없이는 단계 4.5 가 시작 못 함).
