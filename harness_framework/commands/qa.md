@@ -160,6 +160,80 @@ adoption 트랙에서는 1번 완료 시점에 `test_priority_queue.md`의 해�
 - Stop 훅 기반 자동 재시도(`loop-guard.sh`)는 sprint 트랙용이며, `/qa loop`는 사용하지 않는다.
 - adoption 트랙에서 production-guard는 보통 SKIP을 반환하므로, 모드가 `all`이면 핵심 경로 feature 위주로 시간이 소요된다는 점을 진행 동의 단계에서 사용자에게 알린다.
 
+## 모드 6: `e2e-author <인자>` — e2e-author 호출 (adoption 트랙 전용)
+
+`feature_inventory.json`을 입력으로 받아 qa-policy.md의 **1.5 E2E 자동화 도구** 섹션이 지정한 도구의 spec 파일을 무인 생성합니다.
+
+### 인자 패턴
+
+| 인자 | 의미 |
+|------|------|
+| `feat-inv-NNN` | 해당 단일 feature 1건만 spec 생성 |
+| `priority-1` | `test_priority_queue.md`에서 Priority 1 그룹 전체 |
+| `all` | 큐의 pending + 자동화 부적합 제외 전체 |
+
+### 전제
+
+- `current_adoption.txt` 비어있으면 즉시 거부 (sprint 트랙에서는 동작 안 함 — sprint는 test-builder의 E2E 작성으로 이미 커버).
+- `feature_inventory.json` 없으면 거부하고 `/harness adopt` 먼저 안내.
+- `.claude/qa-policy.md`의 **1.5 E2E 자동화 도구** 섹션 핵심 필드(`e2e_tool`, `e2e_spec_dir`, `e2e_spec_naming`)가 비어있거나 "미정"이면 거부.
+
+### 산출물
+
+- spec 파일: qa-policy의 `e2e_spec_dir` 아래 `e2e_spec_naming` 패턴으로 저장
+- manifest: `archive/adoptions/<slug>/e2e_specs/manifest.json` (누적 갱신)
+- `test_priority_queue.md`에 `E2E Spec` 컬럼 추가·갱신
+
+`Status` 컬럼은 변경하지 않습니다 (test-builder가 회귀 자산 작성 시 별도 갱신).
+
+## 모드 7: `e2e-run <인자>` — e2e-runner-reporter 호출 (adoption 트랙 전용)
+
+e2e-author가 생성한 spec을 qa-policy의 `e2e_run_command`로 실행하고, 실패한 시나리오를 GitHub issue로 자동 등록합니다.
+
+### 인자 패턴
+
+| 인자 | 의미 |
+|------|------|
+| `feat-inv-NNN` | 해당 단일 spec만 실행 (`e2e_run_command_single`) |
+| `priority-1` | manifest에서 Priority 1 그룹의 spec만 실행 |
+| `all` | manifest 전체 spec 실행 (`e2e_run_command`) |
+
+### 전제
+
+- `current_adoption.txt` 비어있으면 즉시 거부.
+- `archive/adoptions/<slug>/e2e_specs/manifest.json` 없으면 거부하고 `/qa e2e-author <인자>` 먼저 안내.
+- `.claude/qa-policy.md`의 **1.5** 섹션 + **GitHub Issue 정책** 필드 확인. `github_repo`가 비어있으면 issue 등록은 skip하고 로컬 리포트만 작성.
+- `gh auth status` 실패 + `github_repo`가 정의되어 있으면 거부하고 `gh auth login` 안내.
+
+### 산출물
+
+- 실행 리포트: `archive/adoptions/<slug>/e2e_runs/<run_id>/run_report.json`
+- 사용자 요약: 같은 디렉토리 `run_summary.md`
+- 실행 로그·trace·screenshot: 같은 디렉토리 `artifacts/`
+- GitHub issue: 신규 생성 또는 기존 open issue에 댓글 (dedup 전략은 qa-policy `github_dedup_strategy`)
+
+### Dedup 규칙
+
+- 기본 전략 `label+feat-id`: 동일 라벨 + 제목에 `[<feat-id>]` 포함된 open issue가 이미 있으면 **댓글로 재실패 보고만** 추가.
+- `title-exact`: 동일 제목 전체 일치 시 동일 처리.
+- 한 번 실행에서 등록할 최대 이슈 수는 `github_max_issues_per_run` (기본 20). 초과분은 quota skip으로 리포트.
+
+## 모드 8: `e2e-full <인자>` — e2e-author → e2e-run 순차 실행
+
+위 두 모드를 한 번에 묶어 실행합니다 (자주 쓰이는 패턴):
+
+```
+1. e2e-author <인자> 호출
+   → spec 파일 생성 + manifest 갱신
+   → 실패하면 중단 (e2e-run 진행 안 함)
+
+2. e2e-run <인자> 호출
+   → 방금 생성된 spec 실행
+   → 실패는 GitHub issue로 자동 등록
+```
+
+`e2e-author` 단계가 spec을 0개 생성하면(모두 skipped) e2e-run은 건너뛰고 사용자에게 사유 보고.
+
 ## 산출물 라이프사이클
 
 PR 결과 파일은 active 트랙 동안 루트에 누적됩니다.
@@ -170,3 +244,11 @@ PR 결과 파일은 active 트랙 동안 루트에 누적됩니다.
 | adoption | `/harness adopt-finish` | `adopt-finish.sh` | `archive/adoptions/<slug>/` |
 
 같은 sprint·adoption 안에서 동일 인자로 다시 호출하면 기존 파일을 덮어쓰며, 다른 인자는 별도 파일로 누적됩니다.
+
+E2E 자산은 별도 위치를 사용합니다:
+
+| 자산 | 위치 | 생애주기 |
+|------|------|----------|
+| spec 파일 | qa-policy `e2e_spec_dir` (예: `tests/e2e/`) | 영구 (앱 코드와 함께 git 관리) |
+| spec manifest | `archive/adoptions/<slug>/e2e_specs/manifest.json` | adoption 내내 누적, adopt-finish 후에도 archive 유지 |
+| 실행 리포트 | `archive/adoptions/<slug>/e2e_runs/<run_id>/` | 영구 (회귀 추적용) |
