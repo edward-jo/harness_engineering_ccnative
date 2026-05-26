@@ -103,50 +103,18 @@ priority_score 내림차순으로 큐 생성. 동점이면 `risk_score=High` 우
 
 자동화 부적합 항목(시각 디자인·물리 하드웨어 등)은 별도 표로 분리하거나 `status: skipped`로 즉시 표기.
 
-### 단계 4.5: P1 feature happy path 실측 walkthrough (필수)
-
-단계 4 에서 큐 상위 (Priority 1, 즉 priority_score 최댓값 동률 그룹) 로 분류된 모든 feature 에 대해, **사용자 입장에서 가장 흔한 happy path 시나리오를 실제 실행 환경에서 1회 수행**합니다. 측량·문서화만으로는 사용자가 1분만 클릭해도 발견되는 표면 결함(인증 만료·응답 content-type 불일치·redirect HTML 등) 을 놓치기 때문입니다.
-
-**실행 도구**: 프로젝트 `.claude/qa-policy.md` 의 **1.5 Walkthrough 실행 도구** 항목 참조 (브라우저 자동화 MCP / CLI runner / 수동 클릭+캡처 등 프로젝트가 결정). 항목이 비어있으면 단계 4.5 진행 전에 사용자에게 채우도록 요청.
-
-**시나리오 정의**: feature 당 1줄 — 입력 → 동작 → 기대 결과. 예: `"매니저가 카테고리 추가 모달에서 이름 입력 → 제출 → 카테고리 트리에 즉시 노출"`. 시나리오는 `feature_inventory.json` 의 각 feature 에 `walkthrough_scenario` 필드로 함께 기록.
-
-**Evidence 저장**: `archive/adoptions/<slug>/walkthroughs/<feat-id>/`
-- `scenario.md` — 시나리오 1줄 + 단계별 입력값
-- `screenshots/` — 각 주요 단계 1장 이상 (최소 진입 화면 + 최종 결과 화면; 결함 발생 시 결함 화면 추가)
-- `console.log` — 브라우저/runner 콘솔 출력 (가능한 경우)
-- `network.log` — 비정상 응답 (4xx/5xx, content-type mismatch, redirect 등) 캡처 (가능한 경우)
-
-> Evidence 캡처 방식은 도구마다 다릅니다. 도구의 캡처 API 가 제공되지 않으면 수동 캡처로 대체하되, **`scenario.md` 와 최소 1장의 결과 스크린샷은 반드시 산출물에 포함**합니다.
-
-**결함 발견 시**:
-1. `archive/adoptions/<slug>/walkthrough_findings.md` 에 결함 1건당 1항목 등록 — 형식:
-   ```
-   ## <feat-id>: <한 줄 결함 요약>
-   - 재현 단계: <1, 2, 3 ...>
-   - 관측된 동작: <에러 메시지 / 비정상 화면>
-   - 기대 동작: <happy path 명세>
-   - Evidence: archive/adoptions/<slug>/walkthroughs/<feat-id>/
-   ```
-2. 프로젝트의 backlog 가 존재하면 (`backlog.md` / 동등 위치) **P1 항목으로 자동 등록** — 트리거 "즉시", 액션 "fix". 위치는 사용자에게 한 번 확인.
-3. 발견된 결함이 있어도 walkthrough 단계 자체는 완료로 간주 — 결함은 별도 트랙(backlog) 으로 분리. adoption 진행을 차단하지 않음.
-
-**P1 walkthrough 누락 허용 조건**: 사용자가 명시적으로 "walkthrough 생략" 을 승인하고 그 사유를 META.json 의 `walkthrough_skipped_reason` 필드에 기록한 경우에만. 도구 부재만으로는 생략 불가 (수동 캡처 fallback 가능).
-
 ### 단계 5: 사용자 검토·확정
 
-세 산출물(qa-policy.md 갱신분, feature_inventory.json, test_priority_queue.md) **및 단계 4.5 의 walkthrough evidence + walkthrough_findings.md** 를 사용자에게 한꺼번에 보여주고:
+세 산출물(qa-policy.md 갱신분, feature_inventory.json, test_priority_queue.md)을 사용자에게 한꺼번에 보여주고:
 
 - 우선순위 재정렬 요청 수용
 - 빠진 feature 수동 추가 또는 잘못된 추정 수정
 - 인터뷰에서 누락된 섹션이 있으면 다시 단계 2로
-- walkthrough_findings 의 결함이 backlog 에 등록됐는지 확인
 
 확정 후 META.json의 `feature_count`를 갱신하고 사용자에게 다음 안내:
 
 ```
 adoption "<slug>" 준비 완료.
-- walkthrough 결과: <N>건 수행, <M>건 결함 발견 (backlog P1 등록 완료)
 - 회귀 자산 작성: /qa test feat-inv-001 ... (priority 순서대로)
 - 또는 한 묶음씩: /qa all feat-inv-001
 - 진행 상황: test_priority_queue.md의 status 컬럼이 done으로 갱신됨 (test-builder가 처리)
@@ -186,14 +154,13 @@ adoption "<slug>" 준비 완료.
       "domain_invariants": ["email unique 강제", "비밀번호 길이 ≥ 8"],
       "risk_score": "High",
       "test_coverage_status": "none",
-      "notes": "이메일 인증 비동기 큐 의존",
-      "walkthrough_scenario": "신규 사용자가 이메일·비밀번호 입력 → 회원가입 → 환영 화면으로 진입"
+      "notes": "이메일 인증 비동기 큐 의존"
     }
   ]
 }
 ```
 
-필수 필드(스키마 검증 대상): `schema_version`, `generated_at`, `generated_by`, `adoption_slug`, `features`. 각 feature는 `id`(`feat-inv-NNN`), `title`, `risk_score`(High/Medium/Low), `test_coverage_status`(none/partial/good)이 필수. **단계 4 에서 Priority 1 로 분류된 feature 는 추가로 `walkthrough_scenario`(1줄, 단계 4.5 가 실행) 가 필수.**
+필수 필드(스키마 검증 대상): `schema_version`, `generated_at`, `generated_by`, `adoption_slug`, `features`. 각 feature는 `id`(`feat-inv-NNN`), `title`, `risk_score`(High/Medium/Low), `test_coverage_status`(none/partial/good)이 필수.
 
 ### `test_priority_queue.md` (사용자 리포 루트)
 
@@ -224,15 +191,7 @@ adoption: adopted-2026-04-28-1234
 
 ### `archive/adoptions/<slug>/META.json`
 
-`status`: `active` → `finished`(adopt-finish 시) 또는 `abandoned`(adopt-abandon 시). 단계 4.5 의 walkthrough 가 사용자 승인 하에 생략된 경우 `walkthrough_skipped_reason` 필드에 사유 기록.
-
-### `archive/adoptions/<slug>/walkthroughs/<feat-id>/`
-
-단계 4.5 의 P1 walkthrough evidence 디렉토리. 최소 `scenario.md` + 결과 스크린샷 1장. 도구가 제공하면 `console.log`·`network.log` 추가.
-
-### `archive/adoptions/<slug>/walkthrough_findings.md` (선택)
-
-단계 4.5 에서 결함이 발견된 경우에만 생성. 각 결함은 backlog P1 으로 등록되어 fix 트랙으로 이동.
+`status`: `active` → `finished`(adopt-finish 시) 또는 `abandoned`(adopt-abandon 시).
 
 ---
 
@@ -244,4 +203,4 @@ adoption: adopted-2026-04-28-1234
 ## 모드별 호출
 
 - **신규 retrofit**: `/harness adopt [<제목>]` — current_adoption.txt 비어있을 때.
-- **재개**: 같은 adoption 진행 중 다시 호출되면 단계 1~4.5를 처음부터 다시 하지 않고 현재 산출물 상태를 진단한 뒤 빠진 단계만 보강. walkthrough evidence 가 누락된 P1 feature 가 있으면 단계 4.5 부터 재개.
+- **재개**: 같은 adoption 진행 중 다시 호출되면 단계 1~4를 처음부터 다시 하지 않고 현재 산출물 상태를 진단한 뒤 빠진 단계만 보강.
