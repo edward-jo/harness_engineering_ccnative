@@ -132,6 +132,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor 호출 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드, `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 |
+| `/harness help` · `/sprint help` · `/qa help` | 각 커맨드의 모드 목록·인자·트랙 안내를 콘솔로 출력 (가드 우회, 부수 효과 없음). `--help` / `-h` / `?` 도 동일하게 인식. |
 
 ## 개발 서버
 

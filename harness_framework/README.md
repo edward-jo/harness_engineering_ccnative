@@ -458,6 +458,7 @@ claude
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor가 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드 + `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 (timestamp archive) |
+| `/harness help` · `/sprint help` · `/qa help` | 각 커맨드의 모드 목록·인자·트랙 분기 안내를 콘솔에 출력 (부수 효과 없음, 가드 우회). `--help` / `-h` / `?` 도 동일. |
 
 ---
 

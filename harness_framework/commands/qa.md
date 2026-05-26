@@ -2,6 +2,7 @@ QA 에이전트를 PR/diff 단위 또는 adoption 큐 항목 단위로 호출합
 
 ## 전제
 
+- 첫 토큰이 `help` / `--help` / `-h` / `?`이면 아래 **모드 H**로 분기 (모든 전제 가드 우회).
 - `.claude/qa-policy.md`가 없으면 중단하고 `/harness init` 실행 후 도메인 정보를 채우도록 안내하세요. QA 에이전트는 추측으로 진행하지 않습니다.
 - 호출 트랙 판별:
   - `current_adoption.txt`가 비어있지 않고 인자가 `feat-inv-NNN` 패턴이면 **adoption 트랙**.
@@ -25,6 +26,54 @@ QA 에이전트를 PR/diff 단위 또는 adoption 큐 항목 단위로 호출합
 - sprint 트랙: `pr_test_result_<diff_ref-slug>.json`
 
 ---
+
+## 모드 H: `help` — 모드 목록·인자 패턴·트랙 분기 안내
+
+`$ARGUMENTS`의 첫 토큰이 `help` / `--help` / `-h` / `?` 중 하나면 이 모드로 진입합니다. 전제(qa-policy.md, active project/adoption) 가드를 우회하며 부수 효과 없이 콘솔에 markdown을 그대로 출력합니다.
+
+```
+# /qa — PR/diff·adoption 큐 단위 QA 호출
+
+전제: .claude/qa-policy.md (없으면 /harness init 후 도메인 채우기).
+트랙 분기:
+- current_adoption.txt 있음 + 인자가 `feat-inv-NNN` → adoption 트랙
+- 그 외 → sprint 트랙 (current_project.txt 필수)
+
+## 모드 목록
+
+| 인자 | 트랙 | 동작 |
+|------|------|------|
+| `test <인자>` | 자동 분기 | test-builder PR 모드 — 회귀 자산 작성 + 실행. 산출물: `pr_test_result_<인자-slug>.json` |
+| `review <인자>` | 자동 분기 | risk-reviewer PR 모드 — 누락 시나리오·장애 모드·컴플라이언스. `pr_review_result_*.json` (risk_grade 포함) |
+| `guard <인자>` | 자동 분기 | production-guard PR 모드 — 부하·보안·릴리스 게이트. adoption은 보통 SKIP. `pr_guard_result_*.json` |
+| `all <인자>` | 자동 분기 | 위 셋을 순차 실행 (test FAIL 시 중단, risk High/guard NO-GO 시 컨펌 요구) |
+| `loop all [모드]` | adoption 전용 | `test_priority_queue.md`의 pending 전체를 우선순위 순으로 자동 처리. 모드 생략 시 `all`. FAIL이어도 다음 항목 진행. |
+| `e2e-author <인자>` (v2.3+) | adoption 전용 | e2e-author 호출 — qa-policy `e2e_tool`(playwright/maestro/cypress/...)로 spec 파일 무인 생성. 산출물: spec + `archive/adoptions/<slug>/e2e_specs/manifest.json` |
+| `e2e-run <인자>` (v2.3+) | adoption 전용 | e2e-runner-reporter 호출 — spec 실행 + 실패를 GitHub issue로 자동 등록(dedup: label+feat-id). `archive/adoptions/<slug>/e2e_runs/<run_id>/` |
+| `e2e-full <인자>` (v2.3+) | adoption 전용 | e2e-author → e2e-run 순차 실행. |
+| `help` / `--help` / `-h` / `?` | (공통) | 이 도움말 출력. |
+
+## 인자(`<인자>`) 형태
+
+| 형태 | 트랙 | 의미 |
+|------|------|------|
+| `feat-inv-NNN` | adoption | `feature_inventory.json`에서 해당 feature 컨텍스트 로드 |
+| commit hash (`1830b44`) | sprint | `git diff` 기반 변경 범위 |
+| 브랜치명 (`feature/checkout`) | sprint | `git diff <main>..<branch>` |
+| `feat-NNN` | sprint | `feature_list.json`에서 변경 파일 역산 |
+| 빈 인자 | sprint | `HEAD~1..HEAD` |
+| `all` / `priority-1` | adoption | e2e-* 모드 전용 — manifest/큐 전체 또는 P1 그룹 |
+
+## 다음 단계 빠른 참조
+
+- 단일 PR 빠른 QA: `/qa all <diff_ref>`
+- adoption 큐 일괄: `/qa loop all`
+- adoption E2E 한 번에: `/qa e2e-full all` (qa-policy 1.5 섹션 필수)
+- 트랙 관리: `/harness help`
+- sprint 단위 작업: `/sprint help`
+```
+
+> 위 텍스트는 출력 예시입니다. 실제 출력은 현재 framework 버전과 동기화된 동일 내용을 그대로 보여주면 됩니다.
 
 ## 모드 1: `test <인자>` — test-builder PR 모드
 
