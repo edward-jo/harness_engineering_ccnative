@@ -105,7 +105,7 @@ priority_score 내림차순으로 큐 생성. 동점이면 `risk_score=High` 우
 
 ### 단계 4.5: P1 happy path 시나리오 정의 (실행 없이 설계만)
 
-priority_score 최댓값 동률 그룹 (= P1 feature) 마다 `archive/adoptions/<slug>/walkthroughs/<feat-id>/scenario.md` 작성. **시나리오 설계만 수행하고 실측은 test-builder Walkthrough 모드에게 인계** — 측량가 역할 유지.
+priority_score 최댓값 동률 그룹 (= P1 feature) 마다 **프로젝트 루트** 의 `walkthroughs/<feat-id>/scenario.md` 작성 (다른 dynamic 산출물 — feature_inventory.json, test_priority_queue.md — 과 동일한 root active 패턴. `/harness adopt-finish` 가 `archive/adoptions/<slug>/walkthroughs/` 로 이동). **시나리오 설계만 수행하고 실측은 test-builder Walkthrough 모드에게 인계** — 측량가 역할 유지.
 
 scenario.md 형식:
 

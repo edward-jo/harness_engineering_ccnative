@@ -34,6 +34,13 @@ fi
 # 산출물 이동 (있으면)
 [ -f "feature_inventory.json" ] && mv feature_inventory.json "$SOURCE/feature_inventory.json"
 [ -f "test_priority_queue.md" ] && mv test_priority_queue.md "$SOURCE/test_priority_queue.md"
+[ -f "walkthrough_findings.md" ] && mv walkthrough_findings.md "$SOURCE/walkthrough_findings.md"
+
+# walkthroughs/ 디렉토리 통째 이동 (root active → archive)
+if [ -d "walkthroughs" ]; then
+  rm -rf "$SOURCE/walkthroughs"
+  mv walkthroughs "$SOURCE/walkthroughs"
+fi
 
 shopt -s nullglob
 PR_MOVED=0

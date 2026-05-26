@@ -277,7 +277,7 @@ qa-surveyor 가 단계 4.5 에서 설계한 P1 happy path 시나리오를 **실�
 ### 절차
 
 1. `current_adoption.txt` 에서 active adoption slug 확인 — 없으면 중단하고 `/harness adopt` 안내.
-2. `archive/adoptions/<slug>/walkthroughs/<feat-inv-NNN>/scenario.md` 읽기 — 없으면 중단하고 "qa-surveyor 단계 4.5 미수행. 먼저 시나리오 설계 필요" 안내.
+2. **프로젝트 루트** 의 `walkthroughs/<feat-inv-NNN>/scenario.md` 읽기 — 없으면 중단하고 "qa-surveyor 단계 4.5 미수행. 먼저 시나리오 설계 필요" 안내. (active 동안 root, `/harness adopt-finish` 시 `archive/adoptions/<slug>/walkthroughs/` 로 이동)
 3. `feature_inventory.json` 에서 해당 feature 컨텍스트 로드 (`entry_points`, `core_modules`, `db_tables`, `external_deps`, `domain_invariants`).
 4. `.claude/qa-policy.md §1.5` (Walkthrough 실행 도구) 로 환경 파악:
    - 1순위 도구: Playwright MCP (이미 mcpServers 에 부착됨)
@@ -292,7 +292,7 @@ qa-surveyor 가 단계 4.5 에서 설계한 P1 happy path 시나리오를 **실�
    - 각 단계 별 `browser_click` / `browser_type` / `browser_fill_form` / `browser_select_option`
    - 단계 사이 `browser_take_screenshot` 로 evidence 캡처
    - 마지막 단계 후 `browser_network_requests` 로 응답 status 확인
-7. evidence 저장: `archive/adoptions/<slug>/walkthroughs/<feat-inv-NNN>/`
+7. evidence 저장: 프로젝트 루트의 `walkthroughs/<feat-inv-NNN>/` (scenario.md 와 같은 디렉토리)
    - `screenshots/01-<step-slug>.png`, `02-...png` 등 시간 순
    - `network.json` — 주요 API 호출 status + (있으면) correlationId
    - `evidence.md` — 단계별 PASS/FAIL 표 (scenario.md 의 "예상 관찰" 항목과 1:1 매칭)
@@ -329,7 +329,7 @@ Walkthrough 결과 — <feat-inv-NNN>
 단계 3: <설명> → FAIL (예상: 200, 실제: 500 - upstream error)
   ↳ findings.md 에 결함 1건 박제 (id: NEW-XXX)
 
-evidence: archive/adoptions/<slug>/walkthroughs/<feat-inv-NNN>/
+evidence: walkthroughs/<feat-inv-NNN>/  (active 동안 root, adopt-finish 시 archive/adoptions/<slug>/walkthroughs/ 로 이동)
 - screenshots: N개
 - network.json: M개 API 호출 (PASS K / FAIL L)
 - findings.md: D건 결함

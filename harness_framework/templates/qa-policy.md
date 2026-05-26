@@ -34,7 +34,7 @@ adoption 트랙의 `/qa walkthrough <feat-inv-NNN>` 호출 시 test-builder 가 
 | 인증 자격 정보 | <예: env: TEST_USER_EMAIL / TEST_USER_PW> |
 | 로그인 페이지 URL | <예: /login> |
 | 로그인 form selector | <예: input[name="email"] / input[name="password"]> |
-| 스크린샷 저장 컨벤션 | `archive/adoptions/<slug>/walkthroughs/<feat-id>/screenshots/` |
+| 스크린샷 저장 컨벤션 | `walkthroughs/<feat-id>/screenshots/` (프로젝트 루트, adopt-finish 시 `archive/adoptions/<slug>/walkthroughs/` 로 이동) |
 | Evidence 파일 | `evidence.md` (PASS/FAIL 표) + `network.json` (HTTP 호출 결과) |
 | 결함 발견 시 등록 위치 | <예: GitHub issues (auto: 라벨) / backlog.md / walkthrough_findings.md> |
 

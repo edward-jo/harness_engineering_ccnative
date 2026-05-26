@@ -3,8 +3,8 @@
 # - 가드: test_priority_queue.md의 모든 항목이 done 또는 skipped (--force-incomplete로 우회)
 # - 가드: Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.md 존재 (--skip-walkthrough 로 우회)
 #         (qa-surveyor 단계 4.5 가 설계. 실측은 test-builder Walkthrough 모드 영역 — evidence 는 선택)
-# - feature_inventory.json·test_priority_queue.md·walkthrough_findings.md·pr_*_result_*.json
-#   을 archive/adoptions/<slug>/로 이동
+# - feature_inventory.json·test_priority_queue.md·walkthroughs/·walkthrough_findings.md·pr_*_result_*.json
+#   을 archive/adoptions/<slug>/로 이동 (walkthroughs/ 는 디렉토리 통째)
 # - META.json 갱신(status=finished, finished, tests_added, tests_skipped,
 #                   walkthroughs_designed, walkthroughs_executed)
 # - current_adoption.txt 비우기
@@ -89,9 +89,11 @@ fi
 
 # Walkthrough scenario.md 가드 (qa-surveyor 단계 4.5):
 # Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.md 존재 여부 확인.
+# active 동안에는 프로젝트 루트의 walkthroughs/ (root active 패턴 — feature_inventory.json 등과 동일).
+# adopt-finish 가 디렉토리 통째 archive/adoptions/<slug>/walkthroughs/ 로 이동한다.
 # Priority 1 = priority_score 최댓값 동률 그룹. priority_score 필드가 없는 경우 risk_score=High 인 feature 를 P1 으로 간주.
 # Evidence 파일 (screenshots, evidence.md, findings.md) 은 선택 — test-builder Walkthrough 모드가 후속으로 채움.
-WALKTHROUGH_DIR="$TARGET/walkthroughs"
+WALKTHROUGH_DIR="walkthroughs"
 MISSING_WALKTHROUGH=""
 WALKTHROUGHS_DESIGNED=0
 WALKTHROUGHS_EXECUTED=0
@@ -123,10 +125,10 @@ if [ "$SKIP_WALKTHROUGH" -ne 1 ]; then
   if [ -n "$MISSING_WALKTHROUGH" ]; then
     echo "[adopt-finish] Priority 1 feature 의 walkthrough scenario.md 가 누락됐습니다:" >&2
     for fid in $MISSING_WALKTHROUGH; do
-      echo "  - $fid (기대 경로: $WALKTHROUGH_DIR/$fid/scenario.md)" >&2
+      echo "  - $fid (기대 경로: 프로젝트 루트의 $WALKTHROUGH_DIR/$fid/scenario.md)" >&2
     done
     echo "[adopt-finish] 해결책 중 하나:" >&2
-    echo "  1. qa-surveyor 단계 4.5 를 수행해 누락된 scenario.md 작성" >&2
+    echo "  1. qa-surveyor 단계 4.5 를 수행해 누락된 scenario.md 작성 (프로젝트 루트의 walkthroughs/<feat-id>/scenario.md)" >&2
     echo "  2. /harness adopt-finish --skip-walkthrough (META.json walkthrough_skipped_reason 에 사유 기록 필수)" >&2
     exit 1
   fi
@@ -188,6 +190,13 @@ FEATURE_COUNT=$(jq '.features | length' "$INVENTORY" 2>/dev/null || echo 0)
 # 산출물 이동
 mv "$INVENTORY" "$TARGET/feature_inventory.json"
 mv "$QUEUE" "$TARGET/test_priority_queue.md"
+
+# walkthroughs/ 디렉토리 통째 이동 (있으면, root active → archive)
+if [ -d "walkthroughs" ]; then
+  # $TARGET/walkthroughs 가 이미 있으면 (재실행 등) 제거 후 이동
+  rm -rf "$TARGET/walkthroughs"
+  mv walkthroughs "$TARGET/walkthroughs"
+fi
 
 # walkthrough_findings.md 이동 (있으면)
 if [ -f "walkthrough_findings.md" ]; then
