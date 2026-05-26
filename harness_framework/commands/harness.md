@@ -128,11 +128,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/project-abandon.sh"
    - qa-surveyor가 slug를 자동 생성: `adopted-$(date '+%Y-%m-%d-%H%M')`
    - `current_adoption.txt`에 slug 기록
    - `archive/adoptions/<slug>/META.json` stub 생성 (`status: active`, `title`, `started`)
-   - `qa-policy.md`를 도메인 인터뷰 기반으로 채움
+   - `qa-policy.md`를 도메인 인터뷰 기반으로 채움 (§1.5 Walkthrough 실행 도구 포함)
    - `feature_inventory.json` 작성 (역추출 매핑)
    - `test_priority_queue.md` 작성 (우선순위 큐, 상태 컬럼 포함)
+   - **단계 4.5**: P1 feature 마다 `archive/adoptions/<slug>/walkthroughs/<feat-id>/scenario.md` 설계 (실측은 test-builder Walkthrough 모드 영역)
 4. 완료 후 다음 단계 안내:
    - `/qa test feat-inv-001` — priority 1 회귀 자산 작성 (test-builder PR 모드, adoption 트랙)
+   - `/qa walkthrough feat-inv-001` — P1 시나리오 실측 (test-builder Walkthrough 모드 + Playwright MCP)
    - `/qa all feat-inv-001` — test-builder + risk-reviewer + production-guard 순차 호출
    - `/harness adopt-finish` — 큐 모두 done 시 종료
    - `/harness adopt-abandon` — 중단
@@ -145,18 +147,24 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/project-abandon.sh"
 bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh"
 # 큐에 미완료 항목이 있어도 강제 종료:
 # bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh" --force-incomplete
+# P1 walkthrough scenario.md 가드를 명시적으로 우회 (META.json walkthrough_skipped_reason 기록 필수):
+# bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh" --skip-walkthrough
 ```
 
 가드:
 - `current_adoption.txt`에 active slug 존재
 - `feature_inventory.json`·`test_priority_queue.md` 모두 존재
 - `test_priority_queue.md`의 본 표(자동화 부적합 섹션 제외)에서 모든 status가 `done` 또는 `skipped` (또는 `--force-incomplete`)
+- **`feature_inventory.json`의 Priority 1 (priority_score 최댓값 동률 그룹, 없으면 risk_score=High fallback) feature 마다 `archive/adoptions/<slug>/walkthroughs/<feat-id>/scenario.md` 존재** (qa-surveyor 단계 4.5 산출물). 또는 `--skip-walkthrough` + META.json `walkthrough_skipped_reason` 기록.
+
+> Walkthrough evidence 파일 (screenshots, evidence.md, findings.md) 은 **선택** — test-builder Walkthrough 모드가 후속으로 채울 수 있다. scenario.md (qa-surveyor 산출물) 만 필수.
 
 수행:
 - `feature_inventory.json` → `archive/adoptions/<slug>/feature_inventory.json`
 - `test_priority_queue.md` → `archive/adoptions/<slug>/test_priority_queue.md`
+- `walkthrough_findings.md` (있으면) → `archive/adoptions/<slug>/walkthrough_findings.md`
 - `pr_test_result_feat-inv-*.json` / `pr_review_result_feat-inv-*.json` / `pr_guard_result_feat-inv-*.json` → 같은 archive 경로
-- `META.json` 갱신 (`status: finished`, `finished`, `feature_count`, `tests_added`, `tests_skipped`)
+- `META.json` 갱신 (`status: finished`, `finished`, `feature_count`, `tests_added`, `tests_skipped`, `walkthroughs_designed`, `walkthroughs_executed`)
 - `current_adoption.txt` 비우기
 
 > **qa-policy.md는 이동하지 않습니다** — adoption 종료 후에도 sprint 트랙에서 계속 사용.

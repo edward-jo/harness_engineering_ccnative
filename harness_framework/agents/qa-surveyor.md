@@ -103,6 +103,58 @@ priority_score 내림차순으로 큐 생성. 동점이면 `risk_score=High` 우
 
 자동화 부적합 항목(시각 디자인·물리 하드웨어 등)은 별도 표로 분리하거나 `status: skipped`로 즉시 표기.
 
+### 단계 4.5: P1 happy path 시나리오 정의 (실행 없이 설계만)
+
+priority_score 최댓값 동률 그룹 (= P1 feature) 마다 `archive/adoptions/<slug>/walkthroughs/<feat-id>/scenario.md` 작성. **시나리오 설계만 수행하고 실측은 test-builder Walkthrough 모드에게 인계** — 측량가 역할 유지.
+
+scenario.md 형식:
+
+```markdown
+# Walkthrough — <feat-id>: <feature title>
+
+**시나리오** (1줄): <사용자 관점 happy path 한 문장>
+
+**전제 조건**:
+- 인증 자격: <역할 / 환경변수>
+- 데이터 상태: <기본 시드 / 특정 row 필요>
+- 외부 의존성: <필요 시 mock 정책>
+
+## 단계별 입력값 (happy path)
+
+1. <사용자가 어디로 진입 / 무엇을 입력>
+2. <다음 단계>
+3. ...
+
+## 코드 진입점 매핑
+
+| 단계 | 위치 |
+|------|------|
+| 1 | <file:line 또는 route> |
+| 2 | <...> |
+
+## 예상 관찰 (test-builder 가 실측 시 검증)
+
+- <단계 N 후 보일 UI 텍스트 / 모달 / 상태>
+- <HTTP status 또는 응답 body 필드>
+
+## 회귀 자산 보강 대상 (PR 모드 인계)
+
+- <happy path 외에 회귀 케이스로 박제할 시나리오 후보 — test-builder PR 모드 가 작성>
+```
+
+**의무**:
+- 시나리오만 작성, 실행 금지 — Playwright MCP / dev server 기동 / 스크린샷 캡처는 test-builder 영역.
+- 코드 진입점 매핑은 단계 1 (코드 측량) 결과 활용.
+- 예상 관찰 은 정적 분석 + 도메인 인터뷰 기반 추정. 실측 PASS/FAIL 은 test-builder 가 채움.
+
+작성 후 사용자에게 다음 안내:
+
+```
+P1 feature N건의 walkthrough 시나리오 준비 완료. 실측 진행:
+- /qa walkthrough <feat-inv-NNN> — Playwright MCP 로 실측 + evidence 수집
+- 모든 P1 실측 후: /harness adopt-finish (scenario.md 필수, evidence 는 선택)
+```
+
 ### 단계 5: 사용자 검토·확정
 
 세 산출물(qa-policy.md 갱신분, feature_inventory.json, test_priority_queue.md)을 사용자에게 한꺼번에 보여주고:
@@ -116,6 +168,7 @@ priority_score 내림차순으로 큐 생성. 동점이면 `risk_score=High` 우
 ```
 adoption "<slug>" 준비 완료.
 - 회귀 자산 작성: /qa test feat-inv-001 ... (priority 순서대로)
+- P1 실측 walkthrough: /qa walkthrough feat-inv-001 (단계 4.5 scenario.md 기반)
 - 또는 한 묶음씩: /qa all feat-inv-001
 - 진행 상황: test_priority_queue.md의 status 컬럼이 done으로 갱신됨 (test-builder가 처리)
 - 종료: /harness adopt-finish (모든 큐 done 시) 또는 /harness adopt-abandon
@@ -124,10 +177,11 @@ adoption "<slug>" 준비 완료.
 ### 무엇을 안 하는가
 
 - 테스트 코드 작성 — test-builder PR 모드(priority-id 인자)가 처리
+- **Walkthrough 실측** — test-builder Walkthrough 모드(`/qa walkthrough <feat-inv-NNN>`)가 처리. qa-surveyor 는 단계 4.5 에서 scenario.md (설계) 만 작성
 - 리스크 등급 부여 자체 (단순 추정만, 정식 등급은 risk-reviewer)
 - 부하·보안 측정 — production-guard
 - 새 기능 기획 — planner
-- 코드 수정 — 산출물(qa-policy.md, feature_inventory.json, test_priority_queue.md, META.json) 외엔 어떤 파일도 쓰지 않는다
+- 코드 수정 — 산출물(qa-policy.md, feature_inventory.json, test_priority_queue.md, META.json, walkthroughs/<feat-id>/scenario.md) 외엔 어떤 파일도 쓰지 않는다
 
 ---
 

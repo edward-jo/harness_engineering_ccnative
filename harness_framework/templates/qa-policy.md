@@ -20,6 +20,28 @@
 | E2E 테스트 | Playwright (MCP) | <예: `cd app/frontend && npx playwright test`> |
 | 커버리지 리포트 | <예: pytest-cov> | <예: `pytest --cov=backend`> |
 
+## 1.5 Walkthrough 실행 도구 (test-builder Walkthrough 모드가 참조)
+
+adoption 트랙의 `/qa walkthrough <feat-inv-NNN>` 호출 시 test-builder 가 사용할 도구·환경. qa-surveyor 단계 4.5 에서 작성한 `scenario.md` 를 실측한다.
+
+| 항목 | 값 |
+|------|------|
+| 1순위 도구 | Playwright MCP (test-builder agent 가 자동 부착) |
+| Fallback | 수동 캡처 + 사용자 협업 (Playwright 미설치 또는 dev server 미기동 시) |
+| Dev server 기동 명령 | <예: `pnpm dev` 또는 `npm start`> |
+| Dev server 포트 | <예: 3000> |
+| Dev server ready 신호 | <예: "Ready in" stdout 라인> |
+| 인증 자격 정보 | <예: env: TEST_USER_EMAIL / TEST_USER_PW> |
+| 로그인 페이지 URL | <예: /login> |
+| 로그인 form selector | <예: input[name="email"] / input[name="password"]> |
+| 스크린샷 저장 컨벤션 | `archive/adoptions/<slug>/walkthroughs/<feat-id>/screenshots/` |
+| Evidence 파일 | `evidence.md` (PASS/FAIL 표) + `network.json` (HTTP 호출 결과) |
+| 결함 발견 시 등록 위치 | <예: GitHub issues (auto: 라벨) / backlog.md / walkthrough_findings.md> |
+
+> **scenario.md 는 qa-surveyor 단계 4.5 산출물** (실측 전 시나리오 설계). **evidence 는 test-builder Walkthrough 모드 산출물** (실측 후). 둘은 같은 디렉토리에 공존한다.
+
+> Playwright MCP 미설치 환경 / dev server 미기동 환경에서는 정적 walkthrough (코드 grep + scenario.md 만 작성) 로 대체 가능. 단 표면 결함 (인증 만료 시 HTML 리다이렉트, 매장 격리 미구현 등) 발견율이 떨어진다.
+
 ## 2. 테스트 디렉터리 구조 (test-builder가 참조)
 
 ```

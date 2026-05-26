@@ -86,7 +86,33 @@ adoption 트랙에서 production-guard는 보통 SKIP을 반환합니다 (기존
 
 adoption 트랙에서는 1번 완료 시점에 `test_priority_queue.md`의 해당 행이 `done`으로 갱신됩니다 (test-builder가 처리). 2·3 단계는 큐 status에 영향을 주지 않습니다.
 
-## 모드 5: `loop <범위> [모드]` — adoption 큐 자동 소진 (adoption 트랙 전용)
+## 모드 5: `walkthrough <feat-inv-NNN>` — test-builder Walkthrough 모드 (adoption 트랙 전용)
+
+qa-surveyor 가 단계 4.5 에서 설계한 P1 happy path 시나리오를 **실제 앱에서 실측**한다. evidence 만 수집하고 회귀 자산은 작성하지 않는다.
+
+```
+test-builder 에이전트(Walkthrough 모드) 호출 (인자: feat-inv-NNN)
+→ current_adoption.txt 비어있으면 중단하고 /harness adopt 안내
+→ archive/adoptions/<slug>/walkthroughs/<feat-inv-NNN>/scenario.md 읽기
+   (없으면 중단 — qa-surveyor 단계 4.5 미수행 안내)
+→ qa-policy.md §1.5 (Walkthrough 실행 도구) 로 환경 파악
+→ Dev server 기동 확인 (미기동 시 사용자에게 명령 제시 후 대기)
+→ Playwright MCP 로 시나리오 단계별 실행 + evidence 수집:
+   - screenshots/01-...png, 02-...png ...
+   - network.json (HTTP 호출 status + correlationId)
+   - evidence.md (단계별 PASS/FAIL 표)
+→ 결함 발견 시 findings.md 작성 (자동 issue 등록 금지)
+→ 회귀 자산화 후보 발견 시 scenario.md 의 "회귀 자산 보강 대상" 섹션 갱신
+```
+
+**Walkthrough 결과는 회귀 자산이 아닙니다.** evidence 수집 + 결함 보고 전용.
+
+| 후속 작업 | 호출 |
+|----------|------|
+| 결함을 GitHub issue 또는 backlog 등록 | 사용자 결정 (`gh issue create` 등) |
+| 발견된 시나리오를 영구 회귀 자산으로 박제 | `/qa test feat-inv-NNN` (PR 모드) |
+
+## 모드 6: `loop <범위> [모드]` — adoption 큐 자동 소진 (adoption 트랙 전용)
 
 `test_priority_queue.md`의 `pending` 항목 전체를 우선순위 순으로 자동 처리합니다. **adoption 트랙 전용** — `current_adoption.txt`가 비어있으면 즉시 거부하세요.
 

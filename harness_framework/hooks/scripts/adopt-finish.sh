@@ -1,8 +1,12 @@
 #!/bin/bash
 # /harness adopt-finish 헬퍼: retrofit(adoption) 트랙을 정상 종료.
 # - 가드: test_priority_queue.md의 모든 항목이 done 또는 skipped (--force-incomplete로 우회)
-# - feature_inventory.json·test_priority_queue.md·pr_*_result_*.json을 archive/adoptions/<slug>/로 이동
-# - META.json 갱신(status=finished, finished, tests_added, tests_skipped)
+# - 가드: Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.md 존재 (--skip-walkthrough 로 우회)
+#         (qa-surveyor 단계 4.5 가 설계. 실측은 test-builder Walkthrough 모드 영역 — evidence 는 선택)
+# - feature_inventory.json·test_priority_queue.md·walkthrough_findings.md·pr_*_result_*.json
+#   을 archive/adoptions/<slug>/로 이동
+# - META.json 갱신(status=finished, finished, tests_added, tests_skipped,
+#                   walkthroughs_designed, walkthroughs_executed)
 # - current_adoption.txt 비우기
 #
 # qa-policy.md는 이동하지 않는다 — adoption 종료 후에도 sprint 트랙에서 계속 사용.
@@ -14,10 +18,12 @@ cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 PROGRESS_FILE="claude-progress.txt"
 FORCE_INCOMPLETE=0
+SKIP_WALKTHROUGH=0
 
 for arg in "$@"; do
   case "$arg" in
     --force-incomplete) FORCE_INCOMPLETE=1 ;;
+    --skip-walkthrough) SKIP_WALKTHROUGH=1 ;;
     *) echo "[adopt-finish] 알 수 없는 옵션: $arg" >&2 ; exit 1 ;;
   esac
 done
@@ -81,6 +87,57 @@ if [ -n "$INCOMPLETE" ] && [ "$FORCE_INCOMPLETE" -ne 1 ]; then
   exit 1
 fi
 
+# Walkthrough scenario.md 가드 (qa-surveyor 단계 4.5):
+# Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.md 존재 여부 확인.
+# Priority 1 = priority_score 최댓값 동률 그룹. priority_score 필드가 없는 경우 risk_score=High 인 feature 를 P1 으로 간주.
+# Evidence 파일 (screenshots, evidence.md, findings.md) 은 선택 — test-builder Walkthrough 모드가 후속으로 채움.
+WALKTHROUGH_DIR="$TARGET/walkthroughs"
+MISSING_WALKTHROUGH=""
+WALKTHROUGHS_DESIGNED=0
+WALKTHROUGHS_EXECUTED=0
+
+if [ "$SKIP_WALKTHROUGH" -ne 1 ]; then
+  # P1 feature ID 목록 추출
+  P1_FEATURES=$(jq -r '
+    (.features // []) as $f |
+    ($f | map(.priority_score // null) | map(select(. != null)) | max // null) as $max |
+    if $max != null then
+      $f | map(select((.priority_score // null) == $max) | .id) | .[]
+    else
+      $f | map(select(.risk_score == "High") | .id) | .[]
+    end
+  ' "$INVENTORY" 2>/dev/null || true)
+
+  for fid in $P1_FEATURES; do
+    if [ -f "$WALKTHROUGH_DIR/$fid/scenario.md" ]; then
+      WALKTHROUGHS_DESIGNED=$((WALKTHROUGHS_DESIGNED + 1))
+      # evidence.md 또는 screenshots/ 가 있으면 executed 카운트
+      if [ -f "$WALKTHROUGH_DIR/$fid/evidence.md" ] || [ -d "$WALKTHROUGH_DIR/$fid/screenshots" ]; then
+        WALKTHROUGHS_EXECUTED=$((WALKTHROUGHS_EXECUTED + 1))
+      fi
+    else
+      MISSING_WALKTHROUGH="$MISSING_WALKTHROUGH $fid"
+    fi
+  done
+
+  if [ -n "$MISSING_WALKTHROUGH" ]; then
+    echo "[adopt-finish] Priority 1 feature 의 walkthrough scenario.md 가 누락됐습니다:" >&2
+    for fid in $MISSING_WALKTHROUGH; do
+      echo "  - $fid (기대 경로: $WALKTHROUGH_DIR/$fid/scenario.md)" >&2
+    done
+    echo "[adopt-finish] 해결책 중 하나:" >&2
+    echo "  1. qa-surveyor 단계 4.5 를 수행해 누락된 scenario.md 작성" >&2
+    echo "  2. /harness adopt-finish --skip-walkthrough (META.json walkthrough_skipped_reason 에 사유 기록 필수)" >&2
+    exit 1
+  fi
+else
+  # --skip-walkthrough 우회 시: 이미 수행된 scenario.md / evidence 만 카운트
+  if [ -d "$WALKTHROUGH_DIR" ]; then
+    WALKTHROUGHS_DESIGNED=$(find "$WALKTHROUGH_DIR" -mindepth 2 -maxdepth 2 -name 'scenario.md' 2>/dev/null | wc -l | tr -d '[:space:]')
+    WALKTHROUGHS_EXECUTED=$(find "$WALKTHROUGH_DIR" -mindepth 2 -maxdepth 2 -name 'evidence.md' 2>/dev/null | wc -l | tr -d '[:space:]')
+  fi
+fi
+
 # 카운트 추출 (Status 컬럼 동적 탐지)
 TESTS_DONE=$(awk '
   /^## /                         { skip = ($0 ~ /자동화 부적합/) ? 1 : 0; next }
@@ -132,6 +189,11 @@ FEATURE_COUNT=$(jq '.features | length' "$INVENTORY" 2>/dev/null || echo 0)
 mv "$INVENTORY" "$TARGET/feature_inventory.json"
 mv "$QUEUE" "$TARGET/test_priority_queue.md"
 
+# walkthrough_findings.md 이동 (있으면)
+if [ -f "walkthrough_findings.md" ]; then
+  mv walkthrough_findings.md "$TARGET/walkthrough_findings.md"
+fi
+
 # PR 산출물 이동 (adoption 트랙 한정 — feat-inv-* 패턴)
 PR_MOVED=0
 shopt -s nullglob
@@ -148,7 +210,9 @@ jq \
   --argjson feature_count "$FEATURE_COUNT" \
   --argjson tests_added "$TESTS_DONE" \
   --argjson tests_skipped "$TESTS_SKIPPED" \
-  '.status = "finished" | .finished = $finished | .feature_count = $feature_count | .tests_added = $tests_added | .tests_skipped = $tests_skipped' \
+  --argjson walkthroughs_designed "$WALKTHROUGHS_DESIGNED" \
+  --argjson walkthroughs_executed "$WALKTHROUGHS_EXECUTED" \
+  '.status = "finished" | .finished = $finished | .feature_count = $feature_count | .tests_added = $tests_added | .tests_skipped = $tests_skipped | .walkthroughs_designed = $walkthroughs_designed | .walkthroughs_executed = $walkthroughs_executed' \
   "$META" > "${META}.tmp"
 mv "${META}.tmp" "$META"
 
@@ -157,7 +221,7 @@ mv "${META}.tmp" "$META"
 
 {
   echo ""
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt finish: $SLUG (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED)"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt finish: $SLUG (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, walkthroughs_designed=$WALKTHROUGHS_DESIGNED, walkthroughs_executed=$WALKTHROUGHS_EXECUTED, pr_files=$PR_MOVED)"
 } >> "$PROGRESS_FILE"
 
-echo "[adopt-finish] $TARGET/ 정리 완료 (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED)"
+echo "[adopt-finish] $TARGET/ 정리 완료 (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, walkthroughs_designed=$WALKTHROUGHS_DESIGNED, walkthroughs_executed=$WALKTHROUGHS_EXECUTED, pr_files=$PR_MOVED)"
