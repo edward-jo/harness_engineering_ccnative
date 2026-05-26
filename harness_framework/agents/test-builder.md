@@ -277,42 +277,69 @@ qa-surveyor 가 단계 4.5 에서 설계한 P1 happy path 시나리오를 **실�
 ### 절차
 
 1. `current_adoption.txt` 에서 active adoption slug 확인 — 없으면 중단하고 `/harness adopt` 안내.
-2. **프로젝트 루트** 의 `walkthroughs/<feat-inv-NNN>/scenario.md` 읽기 — 없으면 중단하고 "qa-surveyor 단계 4.5 미수행. 먼저 시나리오 설계 필요" 안내. (active 동안 root, `/harness adopt-finish` 시 `archive/adoptions/<slug>/walkthroughs/` 로 이동)
-3. `feature_inventory.json` 에서 해당 feature 컨텍스트 로드 (`entry_points`, `core_modules`, `db_tables`, `external_deps`, `domain_invariants`).
-4. `.claude/qa-policy.md §1.5` (Walkthrough 실행 도구) 로 환경 파악:
+2. **프로젝트 루트** 의 `walkthroughs/<feat-inv-NNN>/scenario.json` 읽기 (`jq . walkthroughs/<feat-inv-NNN>/scenario.json`) — 없으면 중단하고 "qa-surveyor 단계 4.5 미수행. 먼저 시나리오 설계 필요" 안내. JSON 파싱 실패 시 스키마 위반으로 중단 (`schemas/scenario.schema.json` 참조).
+3. scenario.json 의 `feat_id` 가 인자 `feat-inv-NNN` 과 일치하는지 검증 — 불일치 시 중단.
+4. `feature_inventory.json` 에서 해당 feature 컨텍스트 로드 (`entry_points`, `core_modules`, `db_tables`, `external_deps`, `domain_invariants`).
+5. `.claude/qa-policy.md §1.5` (Walkthrough 실행 도구) 로 환경 파악:
    - 1순위 도구: Playwright MCP (이미 mcpServers 에 부착됨)
    - Dev server 기동 명령 + 포트
-   - 인증 자격 정보 (env 변수)
-   - 로그인 selector + 시나리오 첫 진입 URL
+   - 인증 자격 정보 (env 변수 — scenario.json 의 `$TEST_USER_EMAIL` 같은 표기를 실제 env 값으로 치환)
    - 스크린샷 저장 경로 컨벤션
-5. Dev server 기동 확인 (`curl <localhost:PORT>` 또는 `lsof -i :<PORT>`). 미기동 시 사용자에게 명령 제시 후 대기.
-6. Playwright MCP 로 scenario.md 의 "단계별 입력값" 실행:
-   - `browser_navigate` → 시나리오 첫 단계 URL
-   - 인증 필요 시 `browser_fill_form` + `browser_click` 로 로그인
-   - 각 단계 별 `browser_click` / `browser_type` / `browser_fill_form` / `browser_select_option`
-   - 단계 사이 `browser_take_screenshot` 로 evidence 캡처
-   - 마지막 단계 후 `browser_network_requests` 로 응답 status 확인
-7. evidence 저장: 프로젝트 루트의 `walkthroughs/<feat-inv-NNN>/` (scenario.md 와 같은 디렉토리)
-   - `screenshots/01-<step-slug>.png`, `02-...png` 등 시간 순
+6. Dev server 기동 확인 (`curl <localhost:PORT>` 또는 `lsof -i :<PORT>`). 미기동 시 사용자에게 명령 제시 후 대기.
+7. Playwright MCP 로 `scenario.json.steps[]` 배열 순회. **각 step 의 action 을 MCP 도구로 1:1 매핑**:
+   | action | MCP 도구 | 필수 필드 |
+   |--------|---------|-----------|
+   | navigate | `browser_navigate` | url |
+   | fill | `browser_fill_form` 또는 `browser_evaluate` | selector, value |
+   | click | `browser_click` | selector |
+   | select | `browser_select_option` | selector, value |
+   | type | `browser_type` | selector, value |
+   | press_key | `browser_press_key` | key |
+   | wait | `browser_wait_for` | wait_for |
+   | screenshot | `browser_take_screenshot` | — |
+   | hover | `browser_hover` | selector |
+   | upload | `browser_file_upload` | selector, value (파일 경로) |
+   | evaluate | `browser_evaluate` | selector?, value (JS 코드) |
+   | assert | `browser_snapshot` 후 직접 검증 | — |
+
+   각 step 실행 후 스크린샷 캡처 (파일명: `screenshots/<seq>-<action>.png`). step 사이에 `expected_observations[after_step=N]` 조건이 있으면 즉시 검증.
+8. evidence 저장: 프로젝트 루트의 `walkthroughs/<feat-inv-NNN>/` (scenario.json 와 같은 디렉토리)
+   - `screenshots/<seq>-<action>.png` 등 시간 순
    - `network.json` — 주요 API 호출 status + (있으면) correlationId
-   - `evidence.md` — 단계별 PASS/FAIL 표 (scenario.md 의 "예상 관찰" 항목과 1:1 매칭)
-8. scenario.md 에 "실측 결과" 섹션 append (단계 표 + evidence 파일 링크).
-9. **결함 발견 시**: `findings.md` 작성 — defect 1건 1 entry (재현 경로 + 스크린샷 링크 + 추정 근본 원인). **자동 issue 등록 금지** — 사용자가 후속 `gh issue create` 또는 backlog 갱신 결정.
-10. **회귀 자산화 후보 발견 시**: scenario.md 의 "회귀 자산 보강 대상" 섹션에 추가. 사용자가 `/qa test feat-inv-NNN` (PR 모드) 호출 시 자산화.
+   - **`evidence.json`** — 단계별 PASS/FAIL + 실제 관찰값 (scenario.json 의 `steps` 와 `expected_observations` 에 1:1 매칭). 형식:
+     ```json
+     {
+       "feat_id": "feat-inv-001",
+       "executed_at": "2026-05-26T10:30:00Z",
+       "overall_status": "PASS",
+       "step_results": [
+         { "seq": 1, "status": "PASS", "screenshot": "screenshots/1-navigate.png" },
+         { "seq": 8, "status": "FAIL", "screenshot": "screenshots/8-click.png", "actual": "HTTP 500 - NOT NULL constraint violation", "expected_observation_ref": "after_step:8" }
+       ],
+       "observation_results": [
+         { "after_step": 8, "kind": "http_status", "expected": "201", "actual": "500", "status": "FAIL" }
+       ],
+       "findings": [
+         { "id": "NEW-003", "summary": "백엔드 NOT NULL 위반", "screenshot": "screenshots/8-click.png", "root_cause_hypothesis": "BFF 가 sortOrder 필드 누락" }
+       ]
+     }
+     ```
+9. **결함 발견 시**: 추가로 `findings.md` 작성 — 사람이 읽기 좋은 결함 요약 (defect 1건 1 entry, github issue 본문으로 재사용 가능한 markdown). `evidence.json.findings[]` 와 같은 id 사용. **자동 issue 등록 금지** — 사용자가 후속 `gh issue create` 또는 backlog 갱신 결정.
+10. **회귀 자산화 후보 발견 시**: scenario.json 은 qa-surveyor 산출물이라 수정하지 않는다. 대신 `evidence.json` 에 `regression_candidates_observed` 배열로 기록하거나 findings.md 에 별도 섹션 추가. 사용자가 `/qa test feat-inv-NNN` (PR 모드) 호출 시 자산화.
 
 ### Walkthrough 모드 산출물
 
 | 산출물 | 위치 | 용도 |
 |--------|------|------|
-| `evidence.md` | `walkthroughs/<feat-id>/` | 단계별 PASS/FAIL 표 |
-| `screenshots/*.png` | 같은 디렉토리 | 시각 evidence |
-| `network.json` | 같은 디렉토리 | HTTP 호출 결과 |
-| `findings.md` | 같은 디렉토리 (결함 발견 시) | 결함 1건 1 entry |
-| scenario.md "실측 결과" 섹션 append | 같은 파일 | 시나리오 vs 실측 매칭 |
+| `evidence.json` | `walkthroughs/<feat-id>/` | step_results + observation_results + findings (구조화) |
+| `screenshots/<seq>-<action>.png` | 같은 디렉토리 | 시각 evidence |
+| `network.json` | 같은 디렉토리 | HTTP 호출 결과 (status + correlationId) |
+| `findings.md` | 같은 디렉토리 (결함 발견 시) | 사람이 읽는 결함 요약 (github issue 본문 재사용) |
 
 ### Walkthrough 모드 절대 금지
 
 - `.spec.ts` / `.test.ts` 파일 작성 — 회귀 자산은 PR 모드 영역
+- `scenario.json` 수정 — qa-surveyor 단계 4.5 산출물, immutable. 실측 결과는 evidence.json 에만 기록
 - `feature_inventory.json` / `test_priority_queue.md` 변경 — qa-surveyor 영역
 - `gh issue create` / `backlog.md` 변경 — 사용자 결정 영역
 - 사용자 컨펌 없이 코드 수정 — Walkthrough 모드는 read-only execution

@@ -105,54 +105,61 @@ priority_score 내림차순으로 큐 생성. 동점이면 `risk_score=High` 우
 
 ### 단계 4.5: P1 happy path 시나리오 정의 (실행 없이 설계만)
 
-priority_score 최댓값 동률 그룹 (= P1 feature) 마다 **프로젝트 루트** 의 `walkthroughs/<feat-id>/scenario.md` 작성 (다른 dynamic 산출물 — feature_inventory.json, test_priority_queue.md — 과 동일한 root active 패턴. `/harness adopt-finish` 가 `archive/adoptions/<slug>/walkthroughs/` 로 이동). **시나리오 설계만 수행하고 실측은 test-builder Walkthrough 모드에게 인계** — 측량가 역할 유지.
+priority_score 최댓값 동률 그룹 (= P1 feature) 마다 **프로젝트 루트** 의 `walkthroughs/<feat-id>/scenario.json` 작성 (다른 dynamic 산출물 — feature_inventory.json, test_priority_queue.md — 과 동일한 root active 패턴. `/harness adopt-finish` 가 `archive/adoptions/<slug>/walkthroughs/` 로 이동). **시나리오 설계만 수행하고 실측은 test-builder Walkthrough 모드에게 인계** — 측량가 역할 유지.
 
-scenario.md 형식:
+**파일 형식은 JSON** — `${CLAUDE_PLUGIN_ROOT}/schemas/scenario.schema.json` 스키마 준수 필수. test-builder Walkthrough 모드가 `steps[i].action` 을 Playwright MCP 도구로 1:1 매핑하기 위해 자유 텍스트 markdown 대신 구조화된 JSON 사용.
 
-```markdown
-# Walkthrough — <feat-id>: <feature title>
+scenario.json 형식 (스키마 전문은 `schemas/scenario.schema.json` 참조):
 
-**시나리오** (1줄): <사용자 관점 happy path 한 문장>
-
-**전제 조건**:
-- 인증 자격: <역할 / 환경변수>
-- 데이터 상태: <기본 시드 / 특정 row 필요>
-- 외부 의존성: <필요 시 mock 정책>
-
-## 단계별 입력값 (happy path)
-
-1. <사용자가 어디로 진입 / 무엇을 입력>
-2. <다음 단계>
-3. ...
-
-## 코드 진입점 매핑
-
-| 단계 | 위치 |
-|------|------|
-| 1 | <file:line 또는 route> |
-| 2 | <...> |
-
-## 예상 관찰 (test-builder 가 실측 시 검증)
-
-- <단계 N 후 보일 UI 텍스트 / 모달 / 상태>
-- <HTTP status 또는 응답 body 필드>
-
-## 회귀 자산 보강 대상 (PR 모드 인계)
-
-- <happy path 외에 회귀 케이스로 박제할 시나리오 후보 — test-builder PR 모드 가 작성>
+```json
+{
+  "feat_id": "feat-inv-001",
+  "feature_title": "카테고리 신규 추가",
+  "scenario": "Owner 가 카테고리를 1건 추가하면 draft 목록에 즉시 반영된다",
+  "preconditions": {
+    "auth": "OWNER 역할, env: TEST_USER_EMAIL / TEST_USER_PW",
+    "data": "기본 시드, 동일 이름 카테고리 없음",
+    "external_deps": "backend dev server :3001 기동 필수"
+  },
+  "steps": [
+    { "seq": 1, "action": "navigate", "url": "/login", "description": "로그인 페이지 진입" },
+    { "seq": 2, "action": "fill", "selector": "input[name=email]", "value": "$TEST_USER_EMAIL", "description": "이메일 입력" },
+    { "seq": 3, "action": "fill", "selector": "input[name=password]", "value": "$TEST_USER_PW", "description": "비밀번호 입력" },
+    { "seq": 4, "action": "click", "selector": "button[type=submit]", "description": "Sign in 클릭" },
+    { "seq": 5, "action": "navigate", "url": "/catalog", "description": "카탈로그 페이지 진입" },
+    { "seq": 6, "action": "click", "selector": "button:has-text('새 카테고리')", "description": "신규 추가 모달 오픈" },
+    { "seq": 7, "action": "fill", "selector": "input[name=name]", "value": "테스트 카테고리", "description": "이름 입력" },
+    { "seq": 8, "action": "click", "selector": "button:has-text('저장')", "description": "저장 클릭" }
+  ],
+  "code_entry_points": [
+    { "step": 5, "location": "src/app/(dashboard)/catalog/page.tsx" },
+    { "step": 8, "location": "POST /catalog/categories/draft" }
+  ],
+  "expected_observations": [
+    { "after_step": 4, "kind": "url_change", "target": "/dashboard", "expectation": "대시보드로 리다이렉트" },
+    { "after_step": 8, "kind": "http_status", "target": "POST /api/catalog/categories/draft", "value": "201", "expectation": "draft 생성 201 응답" },
+    { "after_step": 8, "kind": "ui_text", "target": "[role=table]", "value": "테스트 카테고리", "expectation": "draft 목록에 신규 행 표시" }
+  ],
+  "regression_candidates": [
+    { "summary": "중복 이름 입력 시 422 응답 + 인라인 에러 표시", "priority": "High" },
+    { "summary": "빈 이름 제출 시 클라이언트 검증 + 서버 422", "priority": "Medium" }
+  ]
+}
 ```
 
 **의무**:
+- **JSON Schema (`schemas/scenario.schema.json`) 준수** — 작성 후 `jq -e . walkthroughs/<feat-id>/scenario.json` 으로 JSON 유효성 자체 검증. 필수 필드 (feat_id, feature_title, scenario, steps, expected_observations) 누락 시 adopt-finish 가드가 거부.
 - 시나리오만 작성, 실행 금지 — Playwright MCP / dev server 기동 / 스크린샷 캡처는 test-builder 영역.
 - 코드 진입점 매핑은 단계 1 (코드 측량) 결과 활용.
-- 예상 관찰 은 정적 분석 + 도메인 인터뷰 기반 추정. 실측 PASS/FAIL 은 test-builder 가 채움.
+- 예상 관찰 은 정적 분석 + 도메인 인터뷰 기반 추정. 실측 PASS/FAIL 은 test-builder 가 evidence.json 에 채움.
+- 자격증명 값은 env 변수 표기 (`$TEST_USER_EMAIL`) — 평문 금지.
 
 작성 후 사용자에게 다음 안내:
 
 ```
-P1 feature N건의 walkthrough 시나리오 준비 완료. 실측 진행:
-- /qa walkthrough <feat-inv-NNN> — Playwright MCP 로 실측 + evidence 수집
-- 모든 P1 실측 후: /harness adopt-finish (scenario.md 필수, evidence 는 선택)
+P1 feature N건의 walkthrough scenario.json 준비 완료 (schema: schemas/scenario.schema.json). 실측 진행:
+- /qa walkthrough <feat-inv-NNN> — Playwright MCP 로 실측 + evidence.json 수집
+- 모든 P1 실측 후: /harness adopt-finish (scenario.json 필수, evidence.json 은 선택)
 ```
 
 ### 단계 5: 사용자 검토·확정
@@ -168,7 +175,7 @@ P1 feature N건의 walkthrough 시나리오 준비 완료. 실측 진행:
 ```
 adoption "<slug>" 준비 완료.
 - 회귀 자산 작성: /qa test feat-inv-001 ... (priority 순서대로)
-- P1 실측 walkthrough: /qa walkthrough feat-inv-001 (단계 4.5 scenario.md 기반)
+- P1 실측 walkthrough: /qa walkthrough feat-inv-001 (단계 4.5 scenario.json 기반)
 - 또는 한 묶음씩: /qa all feat-inv-001
 - 진행 상황: test_priority_queue.md의 status 컬럼이 done으로 갱신됨 (test-builder가 처리)
 - 종료: /harness adopt-finish (모든 큐 done 시) 또는 /harness adopt-abandon
@@ -177,11 +184,11 @@ adoption "<slug>" 준비 완료.
 ### 무엇을 안 하는가
 
 - 테스트 코드 작성 — test-builder PR 모드(priority-id 인자)가 처리
-- **Walkthrough 실측** — test-builder Walkthrough 모드(`/qa walkthrough <feat-inv-NNN>`)가 처리. qa-surveyor 는 단계 4.5 에서 scenario.md (설계) 만 작성
+- **Walkthrough 실측** — test-builder Walkthrough 모드(`/qa walkthrough <feat-inv-NNN>`)가 처리. qa-surveyor 는 단계 4.5 에서 scenario.json (설계) 만 작성
 - 리스크 등급 부여 자체 (단순 추정만, 정식 등급은 risk-reviewer)
 - 부하·보안 측정 — production-guard
 - 새 기능 기획 — planner
-- 코드 수정 — 산출물(qa-policy.md, feature_inventory.json, test_priority_queue.md, META.json, walkthroughs/<feat-id>/scenario.md) 외엔 어떤 파일도 쓰지 않는다
+- 코드 수정 — 산출물(qa-policy.md, feature_inventory.json, test_priority_queue.md, META.json, walkthroughs/<feat-id>/scenario.json) 외엔 어떤 파일도 쓰지 않는다
 
 ---
 

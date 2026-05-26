@@ -22,7 +22,7 @@
 
 ## 1.5 Walkthrough 실행 도구 (test-builder Walkthrough 모드가 참조)
 
-adoption 트랙의 `/qa walkthrough <feat-inv-NNN>` 호출 시 test-builder 가 사용할 도구·환경. qa-surveyor 단계 4.5 에서 작성한 `scenario.md` 를 실측한다.
+adoption 트랙의 `/qa walkthrough <feat-inv-NNN>` 호출 시 test-builder 가 사용할 도구·환경. qa-surveyor 단계 4.5 에서 작성한 `scenario.json` (schema: `schemas/scenario.schema.json`) 을 실측한다.
 
 | 항목 | 값 |
 |------|------|
@@ -35,12 +35,12 @@ adoption 트랙의 `/qa walkthrough <feat-inv-NNN>` 호출 시 test-builder 가 
 | 로그인 페이지 URL | <예: /login> |
 | 로그인 form selector | <예: input[name="email"] / input[name="password"]> |
 | 스크린샷 저장 컨벤션 | `walkthroughs/<feat-id>/screenshots/` (프로젝트 루트, adopt-finish 시 `archive/adoptions/<slug>/walkthroughs/` 로 이동) |
-| Evidence 파일 | `evidence.md` (PASS/FAIL 표) + `network.json` (HTTP 호출 결과) |
+| Evidence 파일 | `evidence.json` (step_results + observation_results + findings, 구조화) + `network.json` (HTTP 호출 결과) + `findings.md` (사람이 읽는 결함 요약, github issue 본문 재사용) |
 | 결함 발견 시 등록 위치 | <예: GitHub issues (auto: 라벨) / backlog.md / walkthrough_findings.md> |
 
-> **scenario.md 는 qa-surveyor 단계 4.5 산출물** (실측 전 시나리오 설계). **evidence 는 test-builder Walkthrough 모드 산출물** (실측 후). 둘은 같은 디렉토리에 공존한다.
+> **scenario.json 은 qa-surveyor 단계 4.5 산출물** (실측 전 시나리오 설계, immutable). **evidence.json 은 test-builder Walkthrough 모드 산출물** (실측 후, step 별 PASS/FAIL + 실제 관찰값). 둘은 같은 디렉토리에 공존하며 `seq` 로 1:1 매칭.
 
-> Playwright MCP 미설치 환경 / dev server 미기동 환경에서는 정적 walkthrough (코드 grep + scenario.md 만 작성) 로 대체 가능. 단 표면 결함 (인증 만료 시 HTML 리다이렉트, 매장 격리 미구현 등) 발견율이 떨어진다.
+> Playwright MCP 미설치 환경 / dev server 미기동 환경에서는 정적 walkthrough (코드 grep + scenario.json 만 작성) 로 대체 가능. 단 표면 결함 (인증 만료 시 HTML 리다이렉트, 매장 격리 미구현 등) 발견율이 떨어진다.
 
 ## 2. 테스트 디렉터리 구조 (test-builder가 참조)
 

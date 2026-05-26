@@ -1,8 +1,9 @@
 #!/bin/bash
 # /harness adopt-finish 헬퍼: retrofit(adoption) 트랙을 정상 종료.
 # - 가드: test_priority_queue.md의 모든 항목이 done 또는 skipped (--force-incomplete로 우회)
-# - 가드: Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.md 존재 (--skip-walkthrough 로 우회)
-#         (qa-surveyor 단계 4.5 가 설계. 실측은 test-builder Walkthrough 모드 영역 — evidence 는 선택)
+# - 가드: Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.json 존재 + 최소 schema 충족
+#         (--skip-walkthrough 로 우회. qa-surveyor 단계 4.5 가 설계. 실측은 test-builder Walkthrough 모드 — evidence.json 은 선택.
+#          전체 schema: schemas/scenario.schema.json)
 # - feature_inventory.json·test_priority_queue.md·walkthroughs/·walkthrough_findings.md·pr_*_result_*.json
 #   을 archive/adoptions/<slug>/로 이동 (walkthroughs/ 는 디렉토리 통째)
 # - META.json 갱신(status=finished, finished, tests_added, tests_skipped,
@@ -87,14 +88,17 @@ if [ -n "$INCOMPLETE" ] && [ "$FORCE_INCOMPLETE" -ne 1 ]; then
   exit 1
 fi
 
-# Walkthrough scenario.md 가드 (qa-surveyor 단계 4.5):
-# Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.md 존재 여부 확인.
+# Walkthrough scenario.json 가드 (qa-surveyor 단계 4.5):
+# Priority 1 feature 마다 walkthroughs/<feat-id>/scenario.json 존재 + 유효 JSON + 최소 필수 필드 확인.
+# 전체 JSON Schema 검증은 schemas/scenario.schema.json 참조 (외부 도구 ajv-cli 등 필요).
+# 본 가드는 jq 기반 최소 검증만 수행 (feat_id, scenario, steps 배열 존재).
 # active 동안에는 프로젝트 루트의 walkthroughs/ (root active 패턴 — feature_inventory.json 등과 동일).
 # adopt-finish 가 디렉토리 통째 archive/adoptions/<slug>/walkthroughs/ 로 이동한다.
 # Priority 1 = priority_score 최댓값 동률 그룹. priority_score 필드가 없는 경우 risk_score=High 인 feature 를 P1 으로 간주.
-# Evidence 파일 (screenshots, evidence.md, findings.md) 은 선택 — test-builder Walkthrough 모드가 후속으로 채움.
+# Evidence 파일 (screenshots/, evidence.json, network.json, findings.md) 은 선택 — test-builder Walkthrough 모드가 후속으로 채움.
 WALKTHROUGH_DIR="walkthroughs"
 MISSING_WALKTHROUGH=""
+INVALID_WALKTHROUGH=""
 WALKTHROUGHS_DESIGNED=0
 WALKTHROUGHS_EXECUTED=0
 
@@ -111,32 +115,54 @@ if [ "$SKIP_WALKTHROUGH" -ne 1 ]; then
   ' "$INVENTORY" 2>/dev/null || true)
 
   for fid in $P1_FEATURES; do
-    if [ -f "$WALKTHROUGH_DIR/$fid/scenario.md" ]; then
-      WALKTHROUGHS_DESIGNED=$((WALKTHROUGHS_DESIGNED + 1))
-      # evidence.md 또는 screenshots/ 가 있으면 executed 카운트
-      if [ -f "$WALKTHROUGH_DIR/$fid/evidence.md" ] || [ -d "$WALKTHROUGH_DIR/$fid/screenshots" ]; then
-        WALKTHROUGHS_EXECUTED=$((WALKTHROUGHS_EXECUTED + 1))
-      fi
-    else
+    SCENARIO="$WALKTHROUGH_DIR/$fid/scenario.json"
+    if [ ! -f "$SCENARIO" ]; then
       MISSING_WALKTHROUGH="$MISSING_WALKTHROUGH $fid"
+      continue
+    fi
+    # 최소 schema 검증: 유효 JSON + 필수 필드 (feat_id, scenario, steps 배열)
+    if ! jq -e '
+      (.feat_id // empty | type) == "string" and
+      (.scenario // empty | type) == "string" and
+      (.steps // empty | type) == "array" and
+      (.steps | length) > 0 and
+      (.expected_observations // empty | type) == "array" and
+      (.expected_observations | length) > 0
+    ' "$SCENARIO" > /dev/null 2>&1; then
+      INVALID_WALKTHROUGH="$INVALID_WALKTHROUGH $fid"
+      continue
+    fi
+    WALKTHROUGHS_DESIGNED=$((WALKTHROUGHS_DESIGNED + 1))
+    # evidence.json 또는 screenshots/ 가 있으면 executed 카운트
+    if [ -f "$WALKTHROUGH_DIR/$fid/evidence.json" ] || [ -d "$WALKTHROUGH_DIR/$fid/screenshots" ]; then
+      WALKTHROUGHS_EXECUTED=$((WALKTHROUGHS_EXECUTED + 1))
     fi
   done
 
   if [ -n "$MISSING_WALKTHROUGH" ]; then
-    echo "[adopt-finish] Priority 1 feature 의 walkthrough scenario.md 가 누락됐습니다:" >&2
+    echo "[adopt-finish] Priority 1 feature 의 walkthrough scenario.json 이 누락됐습니다:" >&2
     for fid in $MISSING_WALKTHROUGH; do
-      echo "  - $fid (기대 경로: 프로젝트 루트의 $WALKTHROUGH_DIR/$fid/scenario.md)" >&2
+      echo "  - $fid (기대 경로: 프로젝트 루트의 $WALKTHROUGH_DIR/$fid/scenario.json)" >&2
     done
     echo "[adopt-finish] 해결책 중 하나:" >&2
-    echo "  1. qa-surveyor 단계 4.5 를 수행해 누락된 scenario.md 작성 (프로젝트 루트의 walkthroughs/<feat-id>/scenario.md)" >&2
+    echo "  1. qa-surveyor 단계 4.5 를 수행해 누락된 scenario.json 작성 (스키마: schemas/scenario.schema.json)" >&2
     echo "  2. /harness adopt-finish --skip-walkthrough (META.json walkthrough_skipped_reason 에 사유 기록 필수)" >&2
     exit 1
   fi
+
+  if [ -n "$INVALID_WALKTHROUGH" ]; then
+    echo "[adopt-finish] Priority 1 feature 의 scenario.json 이 필수 필드를 누락하거나 JSON 파싱 불가:" >&2
+    for fid in $INVALID_WALKTHROUGH; do
+      echo "  - $fid ($WALKTHROUGH_DIR/$fid/scenario.json — feat_id/scenario/steps[]/expected_observations[] 중 하나 이상 누락 또는 빈 배열)" >&2
+    done
+    echo "[adopt-finish] schemas/scenario.schema.json 의 required 필드 참조 후 보완하세요." >&2
+    exit 1
+  fi
 else
-  # --skip-walkthrough 우회 시: 이미 수행된 scenario.md / evidence 만 카운트
+  # --skip-walkthrough 우회 시: 이미 수행된 scenario.json / evidence 만 카운트
   if [ -d "$WALKTHROUGH_DIR" ]; then
-    WALKTHROUGHS_DESIGNED=$(find "$WALKTHROUGH_DIR" -mindepth 2 -maxdepth 2 -name 'scenario.md' 2>/dev/null | wc -l | tr -d '[:space:]')
-    WALKTHROUGHS_EXECUTED=$(find "$WALKTHROUGH_DIR" -mindepth 2 -maxdepth 2 -name 'evidence.md' 2>/dev/null | wc -l | tr -d '[:space:]')
+    WALKTHROUGHS_DESIGNED=$(find "$WALKTHROUGH_DIR" -mindepth 2 -maxdepth 2 -name 'scenario.json' 2>/dev/null | wc -l | tr -d '[:space:]')
+    WALKTHROUGHS_EXECUTED=$(find "$WALKTHROUGH_DIR" -mindepth 2 -maxdepth 2 -name 'evidence.json' 2>/dev/null | wc -l | tr -d '[:space:]')
   fi
 fi
 

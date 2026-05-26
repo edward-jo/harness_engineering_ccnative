@@ -93,16 +93,16 @@ qa-surveyor 가 단계 4.5 에서 설계한 P1 happy path 시나리오를 **실�
 ```
 test-builder 에이전트(Walkthrough 모드) 호출 (인자: feat-inv-NNN)
 → current_adoption.txt 비어있으면 중단하고 /harness adopt 안내
-→ archive/adoptions/<slug>/walkthroughs/<feat-inv-NNN>/scenario.md 읽기
-   (없으면 중단 — qa-surveyor 단계 4.5 미수행 안내)
+→ 프로젝트 루트의 walkthroughs/<feat-inv-NNN>/scenario.json 읽기 (schema: schemas/scenario.schema.json)
+   (없거나 JSON 파싱 실패 시 중단 — qa-surveyor 단계 4.5 미수행 안내)
 → qa-policy.md §1.5 (Walkthrough 실행 도구) 로 환경 파악
 → Dev server 기동 확인 (미기동 시 사용자에게 명령 제시 후 대기)
-→ Playwright MCP 로 시나리오 단계별 실행 + evidence 수집:
-   - screenshots/01-...png, 02-...png ...
+→ Playwright MCP 로 scenario.json.steps[] 배열 순회 (action → MCP 도구 1:1 매핑) + evidence 수집:
+   - screenshots/<seq>-<action>.png
    - network.json (HTTP 호출 status + correlationId)
-   - evidence.md (단계별 PASS/FAIL 표)
-→ 결함 발견 시 findings.md 작성 (자동 issue 등록 금지)
-→ 회귀 자산화 후보 발견 시 scenario.md 의 "회귀 자산 보강 대상" 섹션 갱신
+   - evidence.json (step_results + observation_results + findings, scenario.json 의 seq 와 1:1)
+→ 결함 발견 시 findings.md 작성 (자동 issue 등록 금지, github issue 본문 재사용 가능)
+→ 회귀 자산화 후보 발견 시 evidence.json 의 regression_candidates_observed 또는 findings.md 별도 섹션 (scenario.json 은 immutable)
 ```
 
 **Walkthrough 결과는 회귀 자산이 아닙니다.** evidence 수집 + 결함 보고 전용.

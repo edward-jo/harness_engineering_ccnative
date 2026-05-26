@@ -131,7 +131,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/project-abandon.sh"
    - `qa-policy.md`를 도메인 인터뷰 기반으로 채움 (§1.5 Walkthrough 실행 도구 포함)
    - `feature_inventory.json` 작성 (역추출 매핑)
    - `test_priority_queue.md` 작성 (우선순위 큐, 상태 컬럼 포함)
-   - **단계 4.5**: P1 feature 마다 프로젝트 루트의 `walkthroughs/<feat-id>/scenario.md` 설계 — root active 패턴 (adopt-finish 시 `archive/adoptions/<slug>/walkthroughs/` 로 이동). 실측은 test-builder Walkthrough 모드 영역
+   - **단계 4.5**: P1 feature 마다 프로젝트 루트의 `walkthroughs/<feat-id>/scenario.json` 설계 (schema: `schemas/scenario.schema.json`). root active 패턴 (adopt-finish 시 `archive/adoptions/<slug>/walkthroughs/` 로 이동). 실측은 test-builder Walkthrough 모드 영역
 4. 완료 후 다음 단계 안내:
    - `/qa test feat-inv-001` — priority 1 회귀 자산 작성 (test-builder PR 모드, adoption 트랙)
    - `/qa walkthrough feat-inv-001` — P1 시나리오 실측 (test-builder Walkthrough 모드 + Playwright MCP)
@@ -147,7 +147,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/project-abandon.sh"
 bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh"
 # 큐에 미완료 항목이 있어도 강제 종료:
 # bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh" --force-incomplete
-# P1 walkthrough scenario.md 가드를 명시적으로 우회 (META.json walkthrough_skipped_reason 기록 필수):
+# P1 walkthrough scenario.json 가드를 명시적으로 우회 (META.json walkthrough_skipped_reason 기록 필수):
 # bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh" --skip-walkthrough
 ```
 
@@ -155,9 +155,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-finish.sh"
 - `current_adoption.txt`에 active slug 존재
 - `feature_inventory.json`·`test_priority_queue.md` 모두 존재
 - `test_priority_queue.md`의 본 표(자동화 부적합 섹션 제외)에서 모든 status가 `done` 또는 `skipped` (또는 `--force-incomplete`)
-- **`feature_inventory.json`의 Priority 1 (priority_score 최댓값 동률 그룹, 없으면 risk_score=High fallback) feature 마다 프로젝트 루트의 `walkthroughs/<feat-id>/scenario.md` 존재** (qa-surveyor 단계 4.5 산출물). 또는 `--skip-walkthrough` + META.json `walkthrough_skipped_reason` 기록.
+- **`feature_inventory.json`의 Priority 1 (priority_score 최댓값 동률 그룹, 없으면 risk_score=High fallback) feature 마다 프로젝트 루트의 `walkthroughs/<feat-id>/scenario.json` 존재 + 최소 필수 필드 충족** (qa-surveyor 단계 4.5 산출물, schema: `schemas/scenario.schema.json`). 또는 `--skip-walkthrough` + META.json `walkthrough_skipped_reason` 기록.
 
-> Walkthrough evidence 파일 (screenshots, evidence.md, findings.md) 은 **선택** — test-builder Walkthrough 모드가 후속으로 채울 수 있다. scenario.md (qa-surveyor 산출물) 만 필수.
+> Walkthrough evidence 파일 (screenshots/, evidence.json, network.json, findings.md) 은 **선택** — test-builder Walkthrough 모드가 후속으로 채울 수 있다. scenario.json (qa-surveyor 산출물) 만 필수.
 
 수행:
 - `feature_inventory.json` → `archive/adoptions/<slug>/feature_inventory.json`
@@ -201,8 +201,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/adopt-abandon.sh"
 | 코드베이스 매핑 | `feature_inventory.json` |
 | 테스트 우선순위 큐 | `test_priority_queue.md` |
 | QA 정책·도메인 컨텍스트 | `.claude/qa-policy.md` (sprint와 공유) |
-| P1 walkthrough 시나리오 (qa-surveyor 단계 4.5) | `walkthroughs/<feat-id>/scenario.md` |
-| Walkthrough evidence (test-builder Walkthrough 모드) | `walkthroughs/<feat-id>/` (screenshots/, evidence.md, network.json, findings.md) |
+| P1 walkthrough 시나리오 (qa-surveyor 단계 4.5) | `walkthroughs/<feat-id>/scenario.json` (schema: `schemas/scenario.schema.json`) |
+| Walkthrough evidence (test-builder Walkthrough 모드) | `walkthroughs/<feat-id>/` (screenshots/, evidence.json, network.json, findings.md) |
 | Walkthrough 결함 요약 (선택) | `walkthrough_findings.md` |
 | PR 산출물 (트랙별) | `pr_test_result_feat-inv-*.json` 등 |
 | 과거 adoption 스냅샷 | `archive/adoptions/<slug>/` (walkthroughs/ 포함) |
