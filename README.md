@@ -29,7 +29,16 @@ claude 세션 안에서 (어떤 워크스페이스에서든):
 /sprint close                 # archive로 이동
 ```
 
-상세 사용법은 [`harness_framework/README.md`](harness_framework/README.md).
+기존 코드베이스 retrofit (adoption 트랙):
+
+```
+/harness adopt <한 줄 제목>   # qa-surveyor가 인터뷰 + 코드 매핑 + 우선순위 큐 생성
+/qa loop all                  # 큐 전체에 대해 test-builder → risk-reviewer → production-guard 자동 처리
+/qa e2e-full all              # (v2.3+) qa-policy의 도구로 E2E spec 생성 + 실행 + 실패 GH issue 등록
+/harness adopt-finish         # 완료 처리
+```
+
+상세 사용법은 [`harness_framework/README.md`](harness_framework/README.md). E2E 빠른 시작은 [adoption 트랙 E2E 빠른 시작](harness_framework/README.md#adoption-트랙-e2e-빠른-시작-v23) 섹션 참조.
 
 ## 리포 구조
 
@@ -40,7 +49,7 @@ claude 세션 안에서 (어떤 워크스페이스에서든):
 
 harness_framework/             ← 플러그인 소스 (= marketplace.json의 source)
 ├── .claude-plugin/plugin.json
-├── agents/                   (planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor)
+├── agents/                   (planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor, e2e-author, e2e-runner-reporter)
 ├── commands/                 (/harness, /sprint, /qa)
 ├── hooks/                    (Stop / PostToolUse 훅 + 헬퍼 스크립트)
 ├── templates/                (stack.md, qa-policy.md — /harness init이 사용자 .claude/로 복사)
