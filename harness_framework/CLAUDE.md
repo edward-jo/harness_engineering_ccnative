@@ -41,8 +41,8 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 | test-builder | `agents/test-builder.md` | sprint(Sprint/PR) + adoption(PR) | 완료 기준 검증 + 회귀 자산. PR 모드는 인자 형태(`feat-inv-*` vs `<diff_ref>`)로 트랙 자동 분기. `sprint_result.json` / `pr_test_result_*.json` |
 | risk-reviewer | `agents/risk-reviewer.md` | sprint(Sprint/PR) + adoption(PR) | 누락 시나리오·장애 모드·컴플라이언스. `sprint_review_result.json` / `pr_review_result_*.json` |
 | production-guard | `agents/production-guard.md` | sprint(Sprint/PR) + adoption(PR, 보통 SKIP) | 부하·보안·릴리스 게이트. `sprint_guard_result.json` / `pr_guard_result_*.json` |
-| e2e-author | `agents/e2e-author.md` | adoption | `feature_inventory.json` 기반 무인 모드로 qa-policy `e2e_tool`(playwright/maestro/cypress/...)의 spec 파일 생성. happy path 1개/feature. 산출물: spec 파일, `archive/adoptions/<slug>/e2e_specs/manifest.json` |
-| e2e-runner-reporter | `agents/e2e-runner-reporter.md` | adoption | qa-policy `e2e_run_command`로 spec 실행 + 실패를 `gh` CLI로 GitHub issue 등록(dedup: label+feat-id). 산출물: `archive/adoptions/<slug>/e2e_runs/<run_id>/run_report.json` |
+| e2e-author | `agents/e2e-author.md` | adoption | `feature_inventory.json` 기반 무인 모드로 qa-policy `e2e_tool`(playwright/maestro/cypress/...)의 spec 파일 생성. happy path 1개/feature. 산출물: spec 파일(영구), `e2e_specs_manifest.json` (루트, adopt-finish 시 archive로 이동) |
+| e2e-runner-reporter | `agents/e2e-runner-reporter.md` | adoption | qa-policy `e2e_run_command`로 spec 실행 + 실패를 `gh` CLI로 GitHub issue 등록(dedup: label+feat-id). 산출물: `e2e_runs/<run_id>/run_report.json` (루트 하위, adopt-finish 시 archive로 이동) |
 
 > 위 파일 경로는 모두 플러그인 루트(`harness_framework/`) 기준이다. 사용자 워크스페이스에는 이들 파일이 없다 — 플러그인 캐시(`~/.claude/plugins/cache/.../`)에서 자동 로드된다.
 
@@ -74,7 +74,9 @@ E2E 자동화 도구(playwright/maestro/cypress/...)는 qa-policy.md의 **1.5 E2
 | `pr_*_result_<인자>.json` | QA PR 모드 (`/qa`) | `<인자>`가 `feat-inv-NNN`이면 adoption, 그 외 sprint. close 또는 adopt-finish 시 각 archive로 이동. |
 | `current_adoption.txt` | `/harness adopt` (qa-surveyor) | 현재 active retrofit slug 한 줄. sprint와 무관하게 공존 가능. |
 | `feature_inventory.json` | qa-surveyor | 코드베이스 역추출 매핑. 스키마는 inventory-lint가 점검. |
-| `test_priority_queue.md` | qa-surveyor (+test-builder가 status 갱신) | 회귀 테스트 우선순위 큐. status: pending/in_progress/done/skipped. |
+| `test_priority_queue.md` | qa-surveyor (+test-builder가 status 갱신) | 회귀 테스트 우선순위 큐. status: pending/in_progress/done/skipped. `E2E Spec` 컬럼은 e2e-author가 갱신. |
+| `e2e_specs_manifest.json` | e2e-author | adoption 트랙. spec 파일 카탈로그 + `skipped` 배열. adopt-finish/abandon 시 archive로 이동. |
+| `e2e_runs/<run_id>/` | e2e-runner-reporter | adoption 트랙. 실행별 디렉토리 — `run_report.json`, `run_summary.md`, `artifacts/`. adopt-finish/abandon 시 archive로 이동. |
 | `claude-progress.txt` | session-end.sh | 세션 간 로그. 200줄 초과 시 `archive/progress/`로 rotation. |
 
 ### archive (cold, 영속)
@@ -91,6 +93,8 @@ E2E 자동화 도구(playwright/maestro/cypress/...)는 qa-policy.md의 **1.5 E2
 | `archive/adoptions/<slug>/feature_inventory.json` | qa-surveyor 코드베이스 매핑 (adopt-finish 시 이동) |
 | `archive/adoptions/<slug>/test_priority_queue.md` | 회귀 테스트 우선순위 큐 최종 상태 |
 | `archive/adoptions/<slug>/pr_*_result_feat-inv-*.json` | adoption 트랙에서 누적된 PR 모드 산출물 |
+| `archive/adoptions/<slug>/e2e_specs_manifest.json` | e2e-author manifest (adopt-finish/abandon 시 루트에서 이동) |
+| `archive/adoptions/<slug>/e2e_runs/<run_id>/` | e2e-runner-reporter 실행 리포트·artifacts (adopt-finish/abandon 시 루트에서 이동) |
 | `archive/sprints/<slug>/INDEX.json` | project의 sprint별 요약 (`/sprint status` 소스) |
 | `archive/sprints/<slug>/META.json` | project 메타 (slug, title, started, finished, sprint_count) |
 | `archive/sprints/<slug>/feature_list.json` | project 종료 시 최종 스냅샷 |
@@ -151,5 +155,5 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 - 새 project 시작 전에 `/harness finish`(정상 완료) 또는 `/harness abandon`(실패·중단)으로 기존 project를 닫아야 한다.
 - **adoption 트랙은 sprint 트랙과 공존 가능**. `current_adoption.txt`가 active marker. 시작은 `/harness adopt`(qa-surveyor 호출), 종료는 `/harness adopt-finish` 또는 `/harness adopt-abandon`. adopt-finish는 `test_priority_queue.md`의 모든 항목이 `done`/`skipped`여야 통과(`--force-incomplete`로 우회).
 - adoption 트랙 산출물(`feature_inventory.json`, `test_priority_queue.md`, `pr_*_result_feat-inv-*.json`)도 active 동안 루트에 둔다. adopt-finish 시 `archive/adoptions/<slug>/`로 이동. `qa-policy.md`는 이동하지 않고 sprint 트랙에서 계속 사용.
-- E2E 자산은 위치가 다르다: spec 파일은 qa-policy `e2e_spec_dir`(예: `tests/e2e/`)에 영구 저장(앱 코드와 함께 git 관리), manifest와 실행 리포트는 adoption 시작 시점부터 `archive/adoptions/<slug>/e2e_specs/` · `e2e_runs/<run_id>/`에 직접 누적된다.
+- E2E 자산도 root → archive 컨벤션을 따른다: spec 파일은 qa-policy `e2e_spec_dir`(예: `tests/e2e/`)에 영구 저장(앱 코드와 함께 git 관리, 이동 안 함). manifest(`e2e_specs_manifest.json`)와 실행 리포트 디렉토리(`e2e_runs/<run_id>/`)는 active 동안 **루트에 둔다**. `adopt-finish.sh`/`adopt-abandon.sh`가 이들을 `archive/adoptions/<slug>/`로 이동한다 (다른 adoption 산출물과 동일 라이프사이클).
 - 커밋 메시지는 한국어로 작성한다.

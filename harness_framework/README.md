@@ -264,6 +264,11 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 ├── current_adoption.txt           # 현재 active retrofit slug (sprint와 공존 가능)
 ├── feature_inventory.json         # qa-surveyor 코드베이스 매핑 (adoption 트랙)
 ├── test_priority_queue.md         # 회귀 테스트 우선순위 큐 (adoption 트랙)
+├── e2e_specs_manifest.json        # e2e-author 산출물 (있을 때만, adoption 트랙)
+├── e2e_runs/<run_id>/             # e2e-runner-reporter 실행 디렉토리 (있을 때만, adoption 트랙)
+│   ├── run_report.json
+│   ├── run_summary.md
+│   └── artifacts/                 # trace, screenshot, console.log, *_stdout.log, *_stderr.log
 ├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
 └── archive/                       # 아카이브 (close/finish 시 생성)
     ├── sprints/<project-slug>/
@@ -273,10 +278,12 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
     │   ├── feature_list.json      # project 종료 시 최종 스냅샷
     │   └── sprint_plan.md
     ├── adoptions/<adoption-slug>/
-    │   ├── META.json              # status, started/finished, feature_count, tests_added/skipped
+    │   ├── META.json              # status, started/finished, feature_count, tests_added/skipped, e2e_runs, e2e_manifest
     │   ├── feature_inventory.json
     │   ├── test_priority_queue.md
-    │   └── pr_*_result_feat-inv-*.json
+    │   ├── pr_*_result_feat-inv-*.json
+    │   ├── e2e_specs_manifest.json  # 있을 때만 — adopt-finish/abandon이 루트에서 이동
+    │   └── e2e_runs/<run_id>/       # 있을 때만 — 같은 이동
     └── progress/
         └── claude-progress-YYYY-MM.txt
 ```
@@ -343,8 +350,8 @@ QA 에이전트는 모두 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파�
 | `test-builder` | 실행 | sprint(Sprint/PR) + adoption(PR) | `sprint_result.json`, `pr_test_result_<인자>.json` | sonnet, `acceptEdits` |
 | `risk-reviewer` | 실행 | sprint + adoption(PR) | `sprint_review_result.json`, `pr_review_result_<인자>.json` | sonnet, `plan` |
 | `production-guard` | 실행 | sprint + adoption(PR, 보통 SKIP) | `sprint_guard_result.json`, `pr_guard_result_<인자>.json` | sonnet, `acceptEdits` |
-| `e2e-author` (v2.3+) | 실행 (저작) | adoption | spec 파일(`e2e_spec_dir`), `archive/adoptions/<slug>/e2e_specs/manifest.json` | opus, `acceptEdits` |
-| `e2e-runner-reporter` (v2.3+) | 실행 (실행+리포트) | adoption | `archive/adoptions/<slug>/e2e_runs/<run_id>/run_report.json`, GitHub issues | sonnet, `acceptEdits` |
+| `e2e-author` (v2.3+) | 실행 (저작) | adoption | spec 파일(`e2e_spec_dir`, 영구), `e2e_specs_manifest.json` (루트, adopt-finish 시 archive 이동) | opus, `acceptEdits` |
+| `e2e-runner-reporter` (v2.3+) | 실행 (실행+리포트) | adoption | `e2e_runs/<run_id>/run_report.json` (루트 하위, adopt-finish 시 archive 이동), GitHub issues | sonnet, `acceptEdits` |
 
 호출:
 - sprint 트랙: `/sprint review`(파이프라인) 또는 `/qa <test\|review\|guard\|all> <diff_ref>`(PR)
@@ -507,7 +514,7 @@ qa-surveyor가 인터뷰 + 코드 측량으로 `feature_inventory.json`과 `test
 /qa e2e-author feat-inv-001     # 단일
 ```
 
-각 feature의 `entry_points`·`core_modules`를 읽어 happy path 1개씩 spec 파일로 떨굽니다. Playwright의 경우 MCP로 실제 페이지를 탐색해 selector를 확정할 수 있고, Maestro·Cypress 등은 코드 정적 분석으로 selector를 추출합니다. 결과 manifest는 `archive/adoptions/<slug>/e2e_specs/manifest.json`에 누적됩니다.
+각 feature의 `entry_points`·`core_modules`를 읽어 happy path 1개씩 spec 파일로 떨굽니다. Playwright의 경우 MCP로 실제 페이지를 탐색해 selector를 확정할 수 있고, Maestro·Cypress 등은 코드 정적 분석으로 selector를 추출합니다. 결과 manifest는 **루트의 `e2e_specs_manifest.json`** 에 누적되며, adopt-finish/abandon 시 `archive/adoptions/<slug>/`로 이동됩니다 (다른 adoption 산출물과 동일 라이프사이클).
 
 ### 4단계: 실행 + GitHub issue 등록
 
@@ -519,7 +526,7 @@ qa-surveyor가 인터뷰 + 코드 측량으로 `feature_inventory.json`과 `test
 
 실패한 시나리오는 `gh issue create`로 GitHub에 자동 등록됩니다. 동일 feature의 open issue가 이미 존재하면 (`label+feat-id` dedup) 새 issue 대신 **댓글로 재실패 보고**가 추가됩니다. `github_max_issues_per_run`을 넘으면 그 회차의 추가 등록은 skip되고 리포트에 quota_skipped로 카운트됩니다.
 
-실행 리포트는 `archive/adoptions/<slug>/e2e_runs/<run_id>/run_report.json`에, 사용자용 markdown 요약은 같은 디렉토리 `run_summary.md`에 저장됩니다.
+실행 리포트는 **루트 하위 `e2e_runs/<run_id>/run_report.json`** 에, 사용자용 markdown 요약은 같은 디렉토리 `run_summary.md`에, trace/screenshot/로그는 `artifacts/`에 저장됩니다. adopt-finish/abandon 시 `e2e_runs/` 디렉토리가 통째로 `archive/adoptions/<slug>/e2e_runs/`로 이동됩니다.
 
 ### 5단계: 묶음 실행 (선택)
 

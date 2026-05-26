@@ -48,8 +48,8 @@ QA 에이전트를 PR/diff 단위 또는 adoption 큐 항목 단위로 호출합
 | `guard <인자>` | 자동 분기 | production-guard PR 모드 — 부하·보안·릴리스 게이트. adoption은 보통 SKIP. `pr_guard_result_*.json` |
 | `all <인자>` | 자동 분기 | 위 셋을 순차 실행 (test FAIL 시 중단, risk High/guard NO-GO 시 컨펌 요구) |
 | `loop all [모드]` | adoption 전용 | `test_priority_queue.md`의 pending 전체를 우선순위 순으로 자동 처리. 모드 생략 시 `all`. FAIL이어도 다음 항목 진행. |
-| `e2e-author <인자>` (v2.3+) | adoption 전용 | e2e-author 호출 — qa-policy `e2e_tool`(playwright/maestro/cypress/...)로 spec 파일 무인 생성. 산출물: spec + `archive/adoptions/<slug>/e2e_specs/manifest.json` |
-| `e2e-run <인자>` (v2.3+) | adoption 전용 | e2e-runner-reporter 호출 — spec 실행 + 실패를 GitHub issue로 자동 등록(dedup: label+feat-id). `archive/adoptions/<slug>/e2e_runs/<run_id>/` |
+| `e2e-author <인자>` (v2.3+) | adoption 전용 | e2e-author 호출 — qa-policy `e2e_tool`(playwright/maestro/cypress/...)로 spec 파일 무인 생성. 산출물: spec + 루트 `e2e_specs_manifest.json` (adopt-finish 시 archive 이동) |
+| `e2e-run <인자>` (v2.3+) | adoption 전용 | e2e-runner-reporter 호출 — spec 실행 + 실패를 GitHub issue로 자동 등록(dedup: label+feat-id). 산출물: 루트 `e2e_runs/<run_id>/` (adopt-finish 시 archive 이동) |
 | `e2e-full <인자>` (v2.3+) | adoption 전용 | e2e-author → e2e-run 순차 실행. |
 | `help` / `--help` / `-h` / `?` | (공통) | 이 도움말 출력. |
 
@@ -229,8 +229,8 @@ adoption 트랙에서는 1번 완료 시점에 `test_priority_queue.md`의 해�
 
 ### 산출물
 
-- spec 파일: qa-policy의 `e2e_spec_dir` 아래 `e2e_spec_naming` 패턴으로 저장
-- manifest: `archive/adoptions/<slug>/e2e_specs/manifest.json` (누적 갱신)
+- spec 파일: qa-policy의 `e2e_spec_dir` 아래 `e2e_spec_naming` 패턴으로 저장 (앱 코드와 함께 영구 git 관리)
+- manifest: `e2e_specs_manifest.json` (사용자 리포 루트, 누적 갱신) — adopt-finish/abandon 시 `archive/adoptions/<slug>/`로 이동
 - `test_priority_queue.md`에 `E2E Spec` 컬럼 추가·갱신
 
 `Status` 컬럼은 변경하지 않습니다 (test-builder가 회귀 자산 작성 시 별도 갱신).
@@ -250,13 +250,13 @@ e2e-author가 생성한 spec을 qa-policy의 `e2e_run_command`로 실행하고, 
 ### 전제
 
 - `current_adoption.txt` 비어있으면 즉시 거부.
-- `archive/adoptions/<slug>/e2e_specs/manifest.json` 없으면 거부하고 `/qa e2e-author <인자>` 먼저 안내.
+- `e2e_specs_manifest.json` (사용자 리포 루트) 없으면 거부하고 `/qa e2e-author <인자>` 먼저 안내.
 - `.claude/qa-policy.md`의 **1.5** 섹션 + **GitHub Issue 정책** 필드 확인. `github_repo`가 비어있으면 issue 등록은 skip하고 로컬 리포트만 작성.
 - `gh auth status` 실패 + `github_repo`가 정의되어 있으면 거부하고 `gh auth login` 안내.
 
 ### 산출물
 
-- 실행 리포트: `archive/adoptions/<slug>/e2e_runs/<run_id>/run_report.json`
+- 실행 리포트: `e2e_runs/<run_id>/run_report.json` (사용자 리포 루트 하위, adopt-finish 시 archive로 이동)
 - 사용자 요약: 같은 디렉토리 `run_summary.md`
 - 실행 로그·trace·screenshot: 같은 디렉토리 `artifacts/`
 - GitHub issue: 신규 생성 또는 기존 open issue에 댓글 (dedup 전략은 qa-policy `github_dedup_strategy`)
@@ -294,10 +294,12 @@ PR 결과 파일은 active 트랙 동안 루트에 누적됩니다.
 
 같은 sprint·adoption 안에서 동일 인자로 다시 호출하면 기존 파일을 덮어쓰며, 다른 인자는 별도 파일로 누적됩니다.
 
-E2E 자산은 별도 위치를 사용합니다:
+E2E 자산은 두 부류로 나뉘며 라이프사이클이 다릅니다:
 
-| 자산 | 위치 | 생애주기 |
-|------|------|----------|
-| spec 파일 | qa-policy `e2e_spec_dir` (예: `tests/e2e/`) | 영구 (앱 코드와 함께 git 관리) |
-| spec manifest | `archive/adoptions/<slug>/e2e_specs/manifest.json` | adoption 내내 누적, adopt-finish 후에도 archive 유지 |
-| 실행 리포트 | `archive/adoptions/<slug>/e2e_runs/<run_id>/` | 영구 (회귀 추적용) |
+| 자산 | active 동안 위치 | adopt-finish 후 위치 | 비고 |
+|------|------------------|----------------------|------|
+| spec 파일 | qa-policy `e2e_spec_dir` (예: `tests/e2e/`) | 같음 (이동 없음) | 앱 코드와 함께 git 영구 관리 |
+| spec manifest | `e2e_specs_manifest.json` (루트) | `archive/adoptions/<slug>/e2e_specs_manifest.json` | 다른 adoption 산출물과 동일 라이프사이클 — `adopt-finish.sh`/`adopt-abandon.sh`가 이동 |
+| 실행 리포트·artifacts | `e2e_runs/<run_id>/` (루트 하위) | `archive/adoptions/<slug>/e2e_runs/<run_id>/` | 동일 |
+
+두 agent는 active 동안 archive 디렉토리에 직접 쓰지 않습니다 (framework 컨벤션 — root = hot/active, archive = cold/finalized).

@@ -28,7 +28,7 @@ color: red
 세션 시작 시 반드시:
 
 1. `current_adoption.txt` — 비어있으면 중단하고 `/harness adopt` 안내.
-2. `archive/adoptions/<slug>/e2e_specs/manifest.json` — 없으면 중단하고 `/qa e2e-author <인자>` 먼저 실행 안내.
+2. `e2e_specs_manifest.json` (사용자 리포 루트) — 없으면 중단하고 `/qa e2e-author <인자>` 먼저 실행 안내.
 3. `.claude/qa-policy.md` — **1.5 E2E 자동화 도구** 섹션 전체. 다음이 비어있으면 거절:
    - `e2e_tool`, `e2e_run_command`, `e2e_run_command_single`
    - `e2e_setup_command`, `e2e_artifacts_dir` (있으면)
@@ -65,9 +65,11 @@ GH_MAX_ISSUES     = github_max_issues_per_run (기본: 20)
 ### 단계 0: 사전 준비
 
 1. `RUN_RUN_ID = $(date '+%Y-%m-%dT%H%M%S')` 생성.
-2. `archive/adoptions/<slug>/e2e_runs/<RUN_RUN_ID>/` 디렉토리 생성.
-3. `SETUP_CMD`가 있으면 실행. 실패 시 즉시 중단하고 `setup_failed.log` 남김.
+2. **루트의 `e2e_runs/<RUN_RUN_ID>/` 디렉토리 생성** (다른 adoption 산출물과 동일 라이프사이클 — adopt-finish/abandon 시 `archive/adoptions/<slug>/`로 이동). archive 디렉토리에 직접 쓰지 않는다.
+3. `SETUP_CMD`가 있으면 실행. 실패 시 즉시 중단하고 같은 디렉토리에 `setup_failed.log` 남김.
 4. issue 등록 모드면 `GH_MAX_ISSUES` 카운터 초기화.
+
+이후 단계에서 등장하는 `artifacts/`, `run_report.json`, `run_summary.md` 등 모든 산출물 경로는 이 `e2e_runs/<RUN_RUN_ID>/` (루트 하위)를 기준으로 한다.
 
 ### 단계 1: 실행
 
@@ -117,11 +119,11 @@ done
 }
 ```
 
-`ARTIFACTS_DIR`에서 매칭되는 trace/screenshot을 `run_runs/<RUN_RUN_ID>/artifacts/` 로 복사.
+`ARTIFACTS_DIR`(qa-policy `e2e_artifacts_dir`)에서 매칭되는 trace/screenshot을 `e2e_runs/<RUN_RUN_ID>/artifacts/` (루트 하위)로 복사.
 
 ### 단계 3: 리포트 작성
 
-`archive/adoptions/<slug>/e2e_runs/<RUN_RUN_ID>/run_report.json`:
+`e2e_runs/<RUN_RUN_ID>/run_report.json` (사용자 리포 루트 하위):
 
 ```json
 {
@@ -265,8 +267,8 @@ e2e-runner-reporter 완료 (run: 2026-05-26T123456)
   - 댓글: 1건 (https://github.com/.../issues/17)
   - dedup 스킵: 0건
   - quota 스킵: 0건
-- 리포트: archive/adoptions/<slug>/e2e_runs/2026-05-26T123456/run_report.json
-- 요약: archive/adoptions/<slug>/e2e_runs/2026-05-26T123456/run_summary.md
+- 리포트: e2e_runs/2026-05-26T123456/run_report.json (루트, adopt-finish 시 archive로 이동)
+- 요약: e2e_runs/2026-05-26T123456/run_summary.md
 
 다음 단계:
 - 실패 fix 후 단일 재실행: /qa e2e-run feat-inv-002

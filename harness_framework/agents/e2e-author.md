@@ -76,7 +76,7 @@ ARTIFACTS_DIR     = e2e_artifacts_dir
 - `domain_invariants` — 시나리오 assertion 후보
 - `external_deps` — 모킹 필요 여부 판단
 
-`entry_points`가 비어있으면 해당 feature는 `archive/adoptions/<slug>/e2e_specs/skipped.json`에 사유와 함께 기록하고 다음 항목으로 진행.
+`entry_points`가 비어있으면 해당 feature는 manifest의 `skipped` 배열에 사유와 함께 추가하고 다음 항목으로 진행. 별도 파일은 생성하지 않는다.
 
 ### 단계 2: 시나리오 도출 (도구별 분기)
 
@@ -127,14 +127,15 @@ ARTIFACTS_DIR     = e2e_artifacts_dir
 
 ### 단계 3: 산출물 작성
 
-각 spec 파일은 `SPEC_DIR` 아래 `SPEC_NAMING` 패턴으로 저장. 동시에 manifest 갱신:
+각 spec 파일은 `SPEC_DIR` 아래 `SPEC_NAMING` 패턴으로 저장 (앱 코드와 함께 git 영구 관리). 동시에 **루트의 `e2e_specs_manifest.json`** 을 누적 갱신한다 — adopt-finish/abandon 시 `archive/adoptions/<slug>/`로 이동된다.
 
-`archive/adoptions/<slug>/e2e_specs/manifest.json`:
+`e2e_specs_manifest.json` (사용자 리포 루트):
 ```json
 {
   "schema_version": "1",
   "generated_at": "2026-05-26T12:34:56Z",
   "generated_by": "e2e-author",
+  "adoption_slug": "adopted-2026-05-26-1300",
   "tool": "playwright",
   "specs": [
     {
@@ -156,7 +157,7 @@ ARTIFACTS_DIR     = e2e_artifacts_dir
 }
 ```
 
-> manifest는 누적 갱신한다. 동일 `feat_id` 재호출 시 해당 entry만 덮어쓰고 나머지는 보존.
+> manifest는 **루트에 두고 누적 갱신**한다 (다른 adoption 산출물 — `feature_inventory.json`, `test_priority_queue.md`, `pr_*_result_feat-inv-*.json` — 과 같은 라이프사이클). 동일 `feat_id` 재호출 시 해당 entry만 덮어쓰고 나머지는 보존. archive 디렉토리에 직접 쓰지 않는다.
 
 ### 단계 4: 큐 갱신
 
@@ -177,7 +178,7 @@ e2e-author 완료
 - 도구: playwright
 - 생성: 12개 spec (tests/e2e/feat-inv-001.spec.ts ... feat-inv-012.spec.ts)
 - 스킵: 2개 (entry_points 비어있음 — qa-surveyor 재호출 필요)
-- manifest: archive/adoptions/adopted-2026-05-26-1300/e2e_specs/manifest.json
+- manifest: e2e_specs_manifest.json (루트, adopt-finish 시 archive로 이동)
 
 다음 단계:
 - 실행 + GitHub issue 등록: /qa e2e-run all

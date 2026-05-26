@@ -2,7 +2,8 @@
 # /harness adopt-finish 헬퍼: retrofit(adoption) 트랙을 정상 종료.
 # - 가드: test_priority_queue.md의 모든 항목이 done 또는 skipped (--force-incomplete로 우회)
 # - feature_inventory.json·test_priority_queue.md·pr_*_result_*.json을 archive/adoptions/<slug>/로 이동
-# - META.json 갱신(status=finished, finished, tests_added, tests_skipped)
+# - e2e_specs_manifest.json·e2e_runs/ (있으면)도 같은 archive 경로로 이동
+# - META.json 갱신(status=finished, finished, tests_added, tests_skipped, e2e_runs)
 # - current_adoption.txt 비우기
 #
 # qa-policy.md는 이동하지 않는다 — adoption 종료 후에도 sprint 트랙에서 계속 사용.
@@ -141,6 +142,20 @@ for f in pr_test_result_feat-inv-*.json pr_review_result_feat-inv-*.json pr_guar
 done
 shopt -u nullglob
 
+# E2E 자산 이동 (있을 때만 — e2e-author/e2e-runner-reporter 미사용 adoption은 영향 없음)
+E2E_MANIFEST_MOVED=0
+if [ -f "e2e_specs_manifest.json" ]; then
+  mv "e2e_specs_manifest.json" "$TARGET/e2e_specs_manifest.json"
+  E2E_MANIFEST_MOVED=1
+fi
+
+E2E_RUNS_MOVED=0
+if [ -d "e2e_runs" ]; then
+  # 동일 adoption에서 여러 run이 누적된 디렉토리를 통째로 이동
+  E2E_RUNS_MOVED=$(find e2e_runs -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+  mv "e2e_runs" "$TARGET/e2e_runs"
+fi
+
 # META 갱신
 DATE=$(date '+%Y-%m-%d')
 jq \
@@ -148,7 +163,9 @@ jq \
   --argjson feature_count "$FEATURE_COUNT" \
   --argjson tests_added "$TESTS_DONE" \
   --argjson tests_skipped "$TESTS_SKIPPED" \
-  '.status = "finished" | .finished = $finished | .feature_count = $feature_count | .tests_added = $tests_added | .tests_skipped = $tests_skipped' \
+  --argjson e2e_runs "$E2E_RUNS_MOVED" \
+  --argjson e2e_manifest "$E2E_MANIFEST_MOVED" \
+  '.status = "finished" | .finished = $finished | .feature_count = $feature_count | .tests_added = $tests_added | .tests_skipped = $tests_skipped | .e2e_runs = $e2e_runs | .e2e_manifest = ($e2e_manifest == 1)' \
   "$META" > "${META}.tmp"
 mv "${META}.tmp" "$META"
 
@@ -157,7 +174,7 @@ mv "${META}.tmp" "$META"
 
 {
   echo ""
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt finish: $SLUG (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED)"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt finish: $SLUG (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED, e2e_manifest=$E2E_MANIFEST_MOVED, e2e_runs=$E2E_RUNS_MOVED)"
 } >> "$PROGRESS_FILE"
 
-echo "[adopt-finish] $TARGET/ 정리 완료 (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED)"
+echo "[adopt-finish] $TARGET/ 정리 완료 (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED, e2e_manifest=$E2E_MANIFEST_MOVED, e2e_runs=$E2E_RUNS_MOVED)"
