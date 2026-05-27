@@ -1,6 +1,6 @@
 {
   "name": "harness",
-  "version": "2.5.0",
+  "version": "2.2.0",
   "description": "Claude Code 네이티브 하네스 framework — Planner → Generator → QA(test-builder · risk-reviewer · production-guard) 루프를 슬래시 커맨드·서브에이전트·훅으로 구현",
   "author": {
     "name": "Edward Jo"

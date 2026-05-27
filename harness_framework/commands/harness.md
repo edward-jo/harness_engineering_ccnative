@@ -8,45 +8,6 @@
 
 ---
 
-## 모드 H: `help` — 모드 목록·인자·트랙 안내
-
-`$ARGUMENTS`의 첫 토큰이 `help` / `--help` / `-h` / `?` 중 하나면 이 모드로 진입합니다. 어떤 부수 효과(파일 생성·이동·에이전트 호출)도 없습니다 — 콘솔에 아래 텍스트를 markdown 그대로 출력하고 끝냅니다.
-
-```
-# /harness — 하네스(트랙 관리) 커맨드
-
-두 트랙을 평행 운영합니다:
-- sprint 트랙: 신규 개발. active marker = current_project.txt
-- adoption 트랙: 기존 코드베이스 retrofit. active marker = current_adoption.txt
-두 트랙은 동시에 active일 수 있습니다.
-
-## 모드 목록
-
-| 인자 | 트랙 | 동작 |
-|------|------|------|
-| `init` | (공통) | 사용자 워크스페이스 부트스트랩 — `.claude/stack.md` / `qa-policy.md` / `rules/` 템플릿 + 상태 스캐폴드 배치 (이미 있으면 보존). 1회성. |
-| `<자유 텍스트>` (예: `AI 할일 앱`) | sprint | 새 project 시작 — planner가 slug 제안 + `feature_list.json` + `sprint_plan.md` 생성. active project 있으면 거부. |
-| `extend <추가 아이디어>` | sprint | 현재 project에 sprint 추가 — planner Extend 모드, max sprint·feat id 이어서 append. |
-| `finish` | sprint | 현재 project 정상 종료 — `archive/sprints/<slug>/`로 이동, `current_project.txt` 비움. |
-| `abandon` | sprint | 현재 project 실패·중단 — `archive/sprints/<slug>-abandoned-<ts>/`로 이동(같은 slug 재사용 가능). |
-| `list` | (공통) | sprint + adoption 트랙의 active / finished / abandoned 항목 나열. |
-| `adopt [<제목>]` | adoption | retrofit 시작 — qa-surveyor가 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성. |
-| `adopt-finish` | adoption | adoption 정상 종료 — 큐 모두 done 시 archive로 이동. `--force-incomplete`로 우회 가능. |
-| `adopt-abandon` | adoption | adoption 실패·중단 — `archive/adoptions/<slug>-abandoned-<ts>/`로 이동. |
-| `help` / `--help` / `-h` / `?` | (공통) | 이 도움말 출력 (부수 효과 없음). |
-
-## 다음 단계 빠른 참조
-
-- 새 project 흐름: `/harness <아이디어>` → `/sprint 1` → `/sprint review` → `/sprint close`
-- 자동 루프: `/sprint loop 1` (단일) / `/sprint loop all` (모든 sprint)
-- adoption 흐름: `/harness adopt <제목>` → `/qa loop all` → `/harness adopt-finish`
-- adoption E2E (v2.3+): `/qa e2e-full all` (spec 생성 + 실행 + 실패 GH issue 등록)
-- 진행 상황: `/sprint status` / `/harness list`
-- 다른 커맨드 도움말: `/sprint help`, `/qa help`
-```
-
-> 위 텍스트는 출력 예시입니다. 실제 출력은 현재 framework 버전·플러그인 상태와 동기화된 동일 내용을 그대로 보여주면 됩니다.
-
 ## 모드 0: `init` — 사용자 프로젝트 부트스트랩 (1회성)
 
 플러그인을 처음 활성화한 직후 한 번 실행. **이미 존재하는 파일은 절대 덮어쓰지 않으므로** 여러 번 실행해도 안전합니다.
@@ -64,7 +25,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/harness-init.sh"
 
 > 두 번째 실행: 사용자가 `stack.md`를 채워둔 상태에서 다시 init을 실행해도 모든 항목이 "보존"으로 표시되며 내용이 유지됩니다.
 
-## 모드 1: 새 project 시작 — `$ARGUMENTS`가 비어있거나 예약 키워드(`init`/`list`/`extend`/`finish`/`abandon`/`adopt`/`adopt-finish`/`adopt-abandon`/`help`/`--help`/`-h`/`?`)가 아닌 자유 텍스트
+## 모드 1: 새 project 시작 — `$ARGUMENTS`가 비어있거나 `init`/`list`/`extend`/`finish`/`abandon`/`adopt`/`adopt-finish`/`adopt-abandon`이 아닌 자유 텍스트
 
 1. `current_project.txt` 읽기.
 2. **비어있지 않으면 중단**하고 다음을 안내:

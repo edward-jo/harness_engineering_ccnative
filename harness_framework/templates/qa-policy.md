@@ -20,64 +20,6 @@
 | E2E 테스트 | Playwright (MCP) | <예: `cd app/frontend && npx playwright test`> |
 | 커버리지 리포트 | <예: pytest-cov> | <예: `pytest --cov=backend`> |
 
-## 1.5 E2E 자동화 도구 (e2e-author + e2e-runner-reporter가 참조)
-
-`/qa e2e-author`·`/qa e2e-run` 모드(adoption 트랙 전용)가 사용하는 도구를 정의합니다. 항목이 비어있거나 "미정"이면 두 에이전트는 작업을 거절합니다.
-
-### 도구 선택
-
-| 항목 | 값 |
-|------|------|
-| `e2e_tool` | <`playwright` \| `maestro` \| `cypress` \| `webdriverio` \| 기타> |
-| `e2e_spec_dir` | <예: `tests/e2e/` (playwright), `.maestro/` (maestro)> |
-| `e2e_spec_naming` | <예: `<feat-id>.spec.ts` (playwright), `<feat-id>.flow.yaml` (maestro)> |
-| `e2e_run_command` | 전체 실행 명령 (예: `cd app/frontend && npx playwright test --reporter=json`) |
-| `e2e_run_command_single` | 단일 spec 실행 명령 (`{spec}` 토큰을 spec 경로로 치환; 예: `npx playwright test {spec} --reporter=json`) |
-| `e2e_setup_command` | 실행 전 준비 (예: `bash app/init.sh && bash scripts/seed-test-data.sh`) — 없으면 "해당 없음" |
-| `e2e_teardown_command` | 실행 후 정리 (예: `bash scripts/cleanup-test-data.sh`) — 없으면 "해당 없음" |
-| `e2e_base_url` | 웹 도구 전용 (예: `http://localhost:5173`) — 모바일 도구면 "해당 없음" |
-| `e2e_device` | 모바일 도구 전용 (예: `iPhone 15 Pro Simulator`, `Pixel 7 Emulator`) — 웹이면 "해당 없음" |
-| `e2e_artifacts_dir` | 실행 산출물(trace·screenshot·video) 위치 (예: `playwright-report/`, `.maestro/output/`) |
-
-### 도구별 빠른 시작 예시
-
-**Playwright (웹)**:
-```
-e2e_tool: playwright
-e2e_spec_dir: tests/e2e/
-e2e_spec_naming: <feat-id>.spec.ts
-e2e_run_command: cd app/frontend && npx playwright test --reporter=json
-e2e_run_command_single: cd app/frontend && npx playwright test {spec} --reporter=json
-e2e_base_url: http://localhost:5173
-e2e_artifacts_dir: app/frontend/playwright-report/
-```
-
-**Maestro (모바일)**:
-```
-e2e_tool: maestro
-e2e_spec_dir: .maestro/
-e2e_spec_naming: <feat-id>.flow.yaml
-e2e_run_command: maestro test .maestro/ --format junit --output .maestro/output/report.xml
-e2e_run_command_single: maestro test {spec} --format junit --output .maestro/output/{feat-id}.xml
-e2e_device: iPhone 15 Pro Simulator
-e2e_artifacts_dir: .maestro/output/
-```
-
-### GitHub Issue 정책 (e2e-runner-reporter가 참조)
-
-E2E 실행 실패 시 GitHub 이슈를 자동 등록할 때 적용됩니다. 비어있으면 e2e-runner-reporter는 이슈 등록을 건너뛰고 로컬 리포트만 남깁니다.
-
-| 항목 | 값 |
-|------|------|
-| `github_repo` | 이슈를 등록할 저장소 (예: `myorg/myapp`). 비우면 issue 등록 skip |
-| `github_issue_labels` | 자동 부여 라벨 (예: `e2e-failure,auto-generated,adoption`) |
-| `github_issue_title_prefix` | 제목 prefix로 dedup 키 역할 (예: `[E2E][<feat-id>]`) |
-| `github_issue_assignees` | 기본 담당자 (예: `qa-team-lead`) — 없으면 "해당 없음" |
-| `github_dedup_strategy` | `title-exact` \| `label+feat-id` (기본: `label+feat-id`) — 동일 feature의 open issue가 이미 있으면 새 이슈 대신 댓글로 추가 실패 보고 |
-| `github_max_issues_per_run` | 한 번 실행에서 등록할 최대 이슈 수 (기본: 20). 폭주 방지 |
-
-> `gh` CLI가 인증되어 있어야 합니다. 미인증이면 e2e-runner-reporter가 시작 전에 거절하고 `gh auth login` 안내.
-
 ## 2. 테스트 디렉터리 구조 (test-builder가 참조)
 
 ```

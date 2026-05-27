@@ -43,19 +43,6 @@ for f in pr_test_result_feat-inv-*.json pr_review_result_feat-inv-*.json pr_guar
 done
 shopt -u nullglob
 
-# E2E 자산 이동 (있을 때만)
-E2E_MANIFEST_MOVED=0
-if [ -f "e2e_specs_manifest.json" ]; then
-  mv "e2e_specs_manifest.json" "$SOURCE/e2e_specs_manifest.json"
-  E2E_MANIFEST_MOVED=1
-fi
-
-E2E_RUNS_MOVED=0
-if [ -d "e2e_runs" ]; then
-  E2E_RUNS_MOVED=$(find e2e_runs -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
-  mv "e2e_runs" "$SOURCE/e2e_runs"
-fi
-
 # 디렉토리 통째로 timestamp suffix로 rename
 mv "$SOURCE" "$DEST"
 
@@ -80,7 +67,7 @@ fi
 
 {
   echo ""
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt abandon: $SLUG → $DEST (pr_files=$PR_MOVED, e2e_manifest=$E2E_MANIFEST_MOVED, e2e_runs=$E2E_RUNS_MOVED)"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt abandon: $SLUG → $DEST (pr_files=$PR_MOVED)"
 } >> "$PROGRESS_FILE"
 
-echo "[adopt-abandon] $DEST/ 로 이동 완료 (pr_files=$PR_MOVED, e2e_manifest=$E2E_MANIFEST_MOVED, e2e_runs=$E2E_RUNS_MOVED). 같은 base slug 재사용 가능."
+echo "[adopt-abandon] $DEST/ 로 이동 완료 (pr_files=$PR_MOVED). 같은 base slug 재사용 가능."

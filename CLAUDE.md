@@ -54,7 +54,6 @@ examples/
 - **Planner**: 1~4문장 아이디어 → `feature_list.json` + `sprint_plan.md` 생성
 - **Generator**: 스프린트 계약(`sprint_contract.md`) 기반 기능 구현, 완료 후 git 커밋
 - **QA (test-builder · risk-reviewer · production-guard)**: 단일 evaluator를 v1.2.0에서 세 역할로 확장. 회귀 자산 작성·완료 기준 검증(test-builder), 누락 시나리오·릴리스 리스크(risk-reviewer), 부하·보안·릴리스 게이트(production-guard). 세 에이전트는 모두 Sprint 모드와 PR 모드를 가짐.
-- **E2E pair (e2e-author · e2e-runner-reporter, v2.3+)**: adoption 트랙 전용. e2e-author가 `feature_inventory.json` 기반 무인 모드로 qa-policy의 `e2e_tool`(Playwright/Maestro/Cypress 등)의 spec 파일을 생성하고, e2e-runner-reporter가 spec을 실행해 실패한 시나리오를 GitHub issue로 자동 등록한다 (dedup: label+feat-id).
 
 > 원본 리서치는 단일 Evaluator 기준이다. `harness_framework/`는 실 운영 관점에서 Evaluator를 분리·확장했다.
 

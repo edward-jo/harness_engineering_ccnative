@@ -2,40 +2,11 @@
 
 ## 전제
 
-모든 서브커맨드 시작 전 `current_project.txt`를 읽어 active project slug를 확인하세요. 비어있으면 중단하고 `/harness <아이디어>`를 안내합니다 (단, `help` 모드는 예외 — 어떤 상태에서도 항상 동작).
+모든 서브커맨드 시작 전 `current_project.txt`를 읽어 active project slug를 확인하세요. 비어있으면 중단하고 `/harness <아이디어>`를 안내합니다.
 
 QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일을 모두 읽어 동작합니다. `qa-policy.md`가 없으면 `/harness init`을 실행해 템플릿을 배치하고 채우도록 안내하세요.
 
 ---
-
-- **help** / **--help** / **-h** / **?**:
-  서브커맨드 목록·인자·동작을 콘솔에 markdown으로 출력하고 끝냅니다. 부수 효과 없음 (active project 가드 우회). 출력 내용:
-
-  ```
-  # /sprint — 스프린트 진행/검증/종료 커맨드
-
-  전제: current_project.txt에 active project slug가 있어야 함 (help 제외).
-  QA 에이전트는 .claude/stack.md + .claude/qa-policy.md 두 파일을 읽습니다.
-
-  ## 서브커맨드 목록
-
-  | 인자 | 동작 |
-  |------|------|
-  | `<숫자>` (예: `1`, `3`) | generator 호출 — 해당 sprint 구현. sprint_contract.md를 generator가 작성·제안, 사용자 합의 후 코드 시작. |
-  | `review` | QA 파이프라인 (test-builder → risk-reviewer → production-guard) 순차 실행. 각 산출물은 루트에. |
-  | `loop <숫자>` | Stop 훅 기반 자동 루프 — generator → test-builder 반복. test-builder PASS 또는 5회 도달 시 종료. risk-reviewer/production-guard는 별도. |
-  | `loop all` | 현재 project의 모든 미완료 sprint 자동 순차 구현 (test-builder만 자동, risk-reviewer/production-guard 제외). 각 sprint PASS 시 sprint-close.sh로 archive. |
-  | `close` | 현재 sprint를 archive/sprints/<slug>/sprint_N/으로 이동. 가드: sprint_result.PASS, risk_grade≠High, release_readiness∈{GO,SKIP}. 우회: `--force-high-risk`, `--force-nogo`. |
-  | `status` | 현재 project의 active + archived 진행 상황 리포트. |
-  | `help` / `--help` / `-h` / `?` | 이 도움말 출력. |
-
-  ## 다음 단계 빠른 참조
-
-  - 한 sprint 끝까지: `/sprint <N>` → `/sprint review` → `/sprint close`
-  - 자동 루프: `/sprint loop <N>` (단일) / `/sprint loop all` (전부)
-  - PR/diff 단위 QA: `/qa <test|review|guard|all> <diff_ref>` 또는 `/qa help`
-  - 트랙 관리: `/harness help`
-  ```
 
 - **숫자** (예: `1`, `3`):
   generator 에이전트를 호출하세요.

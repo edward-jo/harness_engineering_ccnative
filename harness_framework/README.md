@@ -1,6 +1,6 @@
 # Claude Code 하네스 (plugin)
 
-Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework. Claude Code **plugin**으로 배포되며, 슬래시 커맨드(`/harness`, `/sprint`, `/qa`) + 서브에이전트(planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor, e2e-author, e2e-runner-reporter) + 훅(Stop, PostToolUse)을 한 번에 묶어 Planner → Generator → QA 루프를 동작시킵니다.
+Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework. Claude Code **plugin**으로 배포되며, 슬래시 커맨드(`/harness`, `/sprint`, `/qa`) + 서브에이전트(planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor) + 훅(Stop, PostToolUse)을 한 번에 묶어 Planner → Generator → QA 루프를 동작시킵니다.
 
 하나의 리포에서 **여러 독립 아이디어(project)**를 순차적으로 진행할 수 있으며, 각 project는 자체 Sprint 번호 공간을 갖고 `archive/sprints/<slug>/`에 영구 보관됩니다.
 
@@ -217,9 +217,7 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 │   ├── qa-surveyor.md             # QA 측량가: 기존 코드베이스 retrofit
 │   ├── test-builder.md            # QA: 회귀 자산 + sprint 완료 기준 검증
 │   ├── risk-reviewer.md           # QA: 누락 시나리오·장애 모드·릴리스 리스크
-│   ├── production-guard.md        # QA: 부하·보안·릴리스 게이트
-│   ├── e2e-author.md              # E2E 저자: qa-policy의 도구로 spec 무인 생성 (adoption)
-│   └── e2e-runner-reporter.md     # E2E 실행자·리포터: spec 실행 + 실패를 GH issue로 등록 (adoption)
+│   └── production-guard.md        # QA: 부하·보안·릴리스 게이트
 ├── commands/
 │   ├── harness.md                 # /harness (init/new/extend/finish/list/abandon/adopt/...)
 │   ├── sprint.md                  # /sprint (숫자/review/loop/close/status)
@@ -264,11 +262,6 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 ├── current_adoption.txt           # 현재 active retrofit slug (sprint와 공존 가능)
 ├── feature_inventory.json         # qa-surveyor 코드베이스 매핑 (adoption 트랙)
 ├── test_priority_queue.md         # 회귀 테스트 우선순위 큐 (adoption 트랙)
-├── e2e_specs_manifest.json        # e2e-author 산출물 (있을 때만, adoption 트랙)
-├── e2e_runs/<run_id>/             # e2e-runner-reporter 실행 디렉토리 (있을 때만, adoption 트랙)
-│   ├── run_report.json
-│   ├── run_summary.md
-│   └── artifacts/                 # trace, screenshot, console.log, *_stdout.log, *_stderr.log
 ├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
 └── archive/                       # 아카이브 (close/finish 시 생성)
     ├── sprints/<project-slug>/
@@ -278,12 +271,10 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
     │   ├── feature_list.json      # project 종료 시 최종 스냅샷
     │   └── sprint_plan.md
     ├── adoptions/<adoption-slug>/
-    │   ├── META.json              # status, started/finished, feature_count, tests_added/skipped, e2e_runs, e2e_manifest
+    │   ├── META.json              # status, started/finished, feature_count, tests_added/skipped
     │   ├── feature_inventory.json
     │   ├── test_priority_queue.md
-    │   ├── pr_*_result_feat-inv-*.json
-    │   ├── e2e_specs_manifest.json  # 있을 때만 — adopt-finish/abandon이 루트에서 이동
-    │   └── e2e_runs/<run_id>/       # 있을 때만 — 같은 이동
+    │   └── pr_*_result_feat-inv-*.json
     └── progress/
         └── claude-progress-YYYY-MM.txt
 ```
@@ -333,14 +324,14 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 permissionMode: acceptEdits
 ```
 
-### QA — 여섯 에이전트, 두 트랙
+### QA — 네 에이전트, 두 트랙
 
-evaluator는 v1.2.0에서 세 QA 에이전트로 확장, v1.3.0에서 retrofit 전담 **qa-surveyor** 추가(4종), v2.3.0에서 adoption 트랙 자동 E2E 파이프라인을 위한 **e2e-author**·**e2e-runner-reporter**가 추가되어 총 6종이 되었습니다.
+evaluator는 v1.2.0에서 세 QA 에이전트로 확장되었고, v1.3.0에서 retrofit 전담 **qa-surveyor**가 추가되어 총 4종이 되었습니다.
 
 **라이프사이클은 두 트랙**입니다:
 
 - **sprint 트랙**: 신규 개발. planner → generator → test-builder/risk-reviewer/production-guard.
-- **adoption 트랙**: 기존 코드베이스 retrofit. **qa-surveyor → test-builder PR 모드(adoption)** → /harness adopt-finish. E2E 자동화가 필요하면 중간에 **e2e-author → e2e-runner-reporter**를 추가 호출.
+- **adoption 트랙**: 기존 코드베이스 retrofit. **qa-surveyor → test-builder PR 모드(adoption)** → /harness adopt-finish.
 
 QA 에이전트는 모두 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파일을 함께 읽습니다.
 
@@ -350,13 +341,10 @@ QA 에이전트는 모두 `.claude/stack.md`와 `.claude/qa-policy.md` 두 파�
 | `test-builder` | 실행 | sprint(Sprint/PR) + adoption(PR) | `sprint_result.json`, `pr_test_result_<인자>.json` | sonnet, `acceptEdits` |
 | `risk-reviewer` | 실행 | sprint + adoption(PR) | `sprint_review_result.json`, `pr_review_result_<인자>.json` | sonnet, `plan` |
 | `production-guard` | 실행 | sprint + adoption(PR, 보통 SKIP) | `sprint_guard_result.json`, `pr_guard_result_<인자>.json` | sonnet, `acceptEdits` |
-| `e2e-author` (v2.3+) | 실행 (저작) | adoption | spec 파일(`e2e_spec_dir`, 영구), `e2e_specs_manifest.json` (루트, adopt-finish 시 archive 이동) | opus, `acceptEdits` |
-| `e2e-runner-reporter` (v2.3+) | 실행 (실행+리포트) | adoption | `e2e_runs/<run_id>/run_report.json` (루트 하위, adopt-finish 시 archive 이동), GitHub issues | sonnet, `acceptEdits` |
 
 호출:
 - sprint 트랙: `/sprint review`(파이프라인) 또는 `/qa <test\|review\|guard\|all> <diff_ref>`(PR)
 - adoption 트랙: `/harness adopt` → `/qa <test\|review\|guard\|all> feat-inv-NNN`(큐 항목별) 또는 `/qa loop all [모드]`(큐 일괄 소진) → `/harness adopt-finish`
-- adoption E2E 트랙 (v2.3+): `/qa e2e-author <feat-inv-NNN\|priority-1\|all>` → `/qa e2e-run <인자>` (또는 묶음 `/qa e2e-full <인자>`)
 
 ---
 
@@ -459,89 +447,9 @@ claude
 | `/qa guard <인자>` | production-guard PR 모드 — 부하·보안 |
 | `/qa all <인자>` | 위 셋을 순차 실행 |
 | `/qa loop all [모드]` | adoption 트랙 전용 — 큐 pending 전체를 우선순위 순으로 자동 처리 (모드 생략 시 `all`) |
-| `/qa e2e-author <feat-inv-NNN\|priority-1\|all>` | adoption 트랙 전용 (v2.3+) — e2e-author 호출, qa-policy의 `e2e_tool`(playwright/maestro/cypress/...)로 spec 파일 무인 생성 |
-| `/qa e2e-run <feat-inv-NNN\|priority-1\|all>` | adoption 트랙 전용 (v2.3+) — e2e-runner-reporter 호출, spec 실행 + 실패를 GitHub issue로 자동 등록(dedup: label+feat-id) |
-| `/qa e2e-full <feat-inv-NNN\|priority-1\|all>` | adoption 트랙 전용 (v2.3+) — e2e-author → e2e-run 순차 실행 |
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor가 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드 + `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 (timestamp archive) |
-| `/harness help` · `/sprint help` · `/qa help` | 각 커맨드의 모드 목록·인자·트랙 분기 안내를 콘솔에 출력 (부수 효과 없음, 가드 우회). `--help` / `-h` / `?` 도 동일. |
-
----
-
-## Adoption 트랙 E2E 빠른 시작 (v2.3+)
-
-기존 코드베이스의 모든(또는 priority) feature에 대해 도구 비종속 E2E spec을 자동 생성·실행하고 실패는 GitHub issue로 자동 등록하는 흐름입니다.
-
-### 1단계: qa-policy.md에 E2E 도구 정의
-
-`.claude/qa-policy.md`를 열어 **1.5 E2E 자동화 도구** 섹션을 채웁니다. Playwright 예시:
-
-```
-e2e_tool: playwright
-e2e_spec_dir: tests/e2e/
-e2e_spec_naming: <feat-id>.spec.ts
-e2e_run_command: cd app/frontend && npx playwright test --reporter=json
-e2e_run_command_single: cd app/frontend && npx playwright test {spec} --reporter=json
-e2e_base_url: http://localhost:5173
-e2e_artifacts_dir: app/frontend/playwright-report/
-github_repo: myorg/myapp
-github_issue_labels: e2e-failure,auto-generated,adoption
-github_issue_title_prefix: [E2E][<feat-id>]
-github_dedup_strategy: label+feat-id
-github_max_issues_per_run: 20
-```
-
-Maestro(모바일)는 `e2e_tool: maestro`, `e2e_spec_dir: .maestro/`, `e2e_spec_naming: <feat-id>.flow.yaml`, `e2e_run_command: maestro test .maestro/`로 바꾸면 됩니다. 다른 도구도 같은 방식 — qa-policy 한 곳만 수정하면 두 에이전트가 그대로 따릅니다.
-
-`github_repo`가 비어있으면 e2e-runner-reporter는 issue 등록을 건너뛰고 로컬 리포트만 남깁니다. `gh auth status`가 실패하면 시작 전에 거절합니다.
-
-### 2단계: adoption 시작 (qa-surveyor)
-
-```
-/harness adopt 기존 SaaS 회귀 테스트 구축
-```
-
-qa-surveyor가 인터뷰 + 코드 측량으로 `feature_inventory.json`과 `test_priority_queue.md`를 만듭니다.
-
-### 3단계: E2E spec 자동 생성
-
-```
-/qa e2e-author all              # 전체
-# 또는
-/qa e2e-author priority-1       # P1만
-# 또는
-/qa e2e-author feat-inv-001     # 단일
-```
-
-각 feature의 `entry_points`·`core_modules`를 읽어 happy path 1개씩 spec 파일로 떨굽니다. Playwright의 경우 MCP로 실제 페이지를 탐색해 selector를 확정할 수 있고, Maestro·Cypress 등은 코드 정적 분석으로 selector를 추출합니다. 결과 manifest는 **루트의 `e2e_specs_manifest.json`** 에 누적되며, adopt-finish/abandon 시 `archive/adoptions/<slug>/`로 이동됩니다 (다른 adoption 산출물과 동일 라이프사이클).
-
-### 4단계: 실행 + GitHub issue 등록
-
-```
-/qa e2e-run all                 # manifest 전체 실행
-# 또는
-/qa e2e-run feat-inv-001        # 단일 spec
-```
-
-실패한 시나리오는 `gh issue create`로 GitHub에 자동 등록됩니다. 동일 feature의 open issue가 이미 존재하면 (`label+feat-id` dedup) 새 issue 대신 **댓글로 재실패 보고**가 추가됩니다. `github_max_issues_per_run`을 넘으면 그 회차의 추가 등록은 skip되고 리포트에 quota_skipped로 카운트됩니다.
-
-실행 리포트는 **루트 하위 `e2e_runs/<run_id>/run_report.json`** 에, 사용자용 markdown 요약은 같은 디렉토리 `run_summary.md`에, trace/screenshot/로그는 `artifacts/`에 저장됩니다. adopt-finish/abandon 시 `e2e_runs/` 디렉토리가 통째로 `archive/adoptions/<slug>/e2e_runs/`로 이동됩니다.
-
-### 5단계: 묶음 실행 (선택)
-
-3·4단계를 한 번에 묶고 싶으면:
-
-```
-/qa e2e-full all
-```
-
-`e2e-author` → `e2e-run` 순차 실행. author 단계에서 spec이 0개 생성되면 run은 자동 skip됩니다.
-
-### 통상 트랙(test-builder)과의 관계
-
-- `e2e-author/e2e-runner-reporter`는 **happy path E2E spec만** 생성·실행합니다. 단위·통합·API 회귀 자산은 기존대로 `/qa test feat-inv-NNN`(test-builder)로 작성하세요. 두 트랙은 같은 큐 항목에 대해 병행 운용 가능합니다.
-- `test_priority_queue.md`에 `E2E Spec` 컬럼이 자동 추가되어 spec 경로가 기록됩니다. `Status` 컬럼은 test-builder가 회귀 자산 작성 시 갱신합니다.
 
 ---
 
