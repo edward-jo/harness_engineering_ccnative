@@ -10,7 +10,7 @@
       "name": "harness",
       "source": "./harness_framework",
       "description": "Claude Code 네이티브 하네스 framework. 슬래시 커맨드(/harness, /sprint, /qa) + 서브에이전트(planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor) + Stop/PostToolUse 훅으로 구성된 Sprint 단위 자동화.",
-      "version": "2.2.0",
+      "version": "2.6.0",
       "author": {
         "name": "Edward Jo",
         "url": "https://github.com/edward-jo"
