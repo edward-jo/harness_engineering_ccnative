@@ -42,7 +42,7 @@ framework는 두 트랙(sprint = 신규 개발 / adoption = 기존 코드 retrof
 | risk-reviewer | `agents/risk-reviewer.md` | sprint(Sprint/PR) + adoption(PR) | 누락 시나리오·장애 모드·컴플라이언스. `sprint_review_result.json` / `pr_review_result_*.json` |
 | production-guard | `agents/production-guard.md` | sprint(Sprint/PR) + adoption(PR, 보통 SKIP) | 부하·보안·릴리스 게이트. `sprint_guard_result.json` / `pr_guard_result_*.json` |
 | e2e-author | `agents/e2e-author.md` | adoption | `feature_inventory.json` 기반 무인 모드로 qa-policy `e2e_tool`(playwright/maestro/cypress/...)의 spec 파일 생성. happy path 1개/feature. 산출물: spec 파일(영구), `e2e_specs_manifest.json` (루트, adopt-finish 시 archive로 이동) |
-| e2e-runner-reporter | `agents/e2e-runner-reporter.md` | adoption | qa-policy `e2e_run_command`로 spec 실행 + 실패를 `gh` CLI로 GitHub issue 등록(dedup: label+feat-id). 산출물: `e2e_runs/<run_id>/run_report.json` (루트 하위, adopt-finish 시 archive로 이동) |
+| e2e-runner-reporter | `agents/e2e-runner-reporter.md` | adoption | qa-policy `e2e_run_command`로 spec 실행 + 실패를 `gh` CLI로 GitHub issue 등록(dedup: label+feat-id). screenshot은 orphan `e2e-assets` 브랜치에 push 후 raw URL을 본문에 embed(v2.6+). 산출물: `e2e_runs/<run_id>/run_report.json` (루트 하위, adopt-finish 시 archive로 이동) |
 
 > 위 파일 경로는 모두 플러그인 루트(`harness_framework/`) 기준이다. 사용자 워크스페이스에는 이들 파일이 없다 — 플러그인 캐시(`~/.claude/plugins/cache/.../`)에서 자동 로드된다.
 

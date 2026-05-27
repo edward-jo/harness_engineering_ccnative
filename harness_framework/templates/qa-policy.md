@@ -78,6 +78,27 @@ E2E 실행 실패 시 GitHub 이슈를 자동 등록할 때 적용됩니다. 비
 
 > `gh` CLI가 인증되어 있어야 합니다. 미인증이면 e2e-runner-reporter가 시작 전에 거절하고 `gh auth login` 안내.
 
+### Issue 첨부 이미지 업로드 정책 (e2e-runner-reporter가 참조)
+
+GitHub REST API는 정식 issue attachment 업로드 엔드포인트가 없습니다. 그래서 e2e-runner-reporter는 같은 repo의 **orphan asset 브랜치**에 이미지를 commit·push한 뒤, `raw.githubusercontent.com` URL을 issue 본문에 markdown image로 삽입합니다 (사용자는 GitHub 웹에서 바로 미리보기 가능).
+
+| 항목 | 값 |
+|------|------|
+| `github_assets_enabled` | `true` \| `false` (기본: `github_repo`가 설정돼 있으면 `true`) — false면 이미지를 텍스트 경로로만 표기 |
+| `github_assets_branch` | 이미지가 저장될 orphan 브랜치명 (기본: `e2e-assets`). 없으면 자동 생성. |
+| `github_assets_path_prefix` | 브랜치 내 경로 prefix (기본: `e2e_runs/`). 전체 경로 = `<prefix><adoption_slug>/<run_id>/<feat_id>/<filename>` |
+| `github_assets_image_extensions` | 업로드 대상 확장자 (쉼표 구분, 기본: `png,jpg,jpeg,webp,gif`). 그 외(trace.zip, .mp4, .json 등)는 업로드하지 않고 로컬 경로 텍스트만 표기 |
+| `github_assets_max_image_size_mb` | 개별 이미지 최대 크기 MB (기본: `10`). 초과 시 업로드 skip + issue 본문에 `(too large to upload: NN MB)` 표기 |
+| `github_assets_max_total_size_mb` | 한 번 실행에서 push할 총 크기 MB (기본: `100`). 초과 시 가장 작은 이미지부터 우선 업로드하고 나머지는 skip |
+| `github_assets_commit_user_name` | assets 브랜치 commit author (선택). 없으면 git 기본 user 사용 |
+| `github_assets_commit_user_email` | 같음 (선택) |
+
+**동작**:
+- 이 섹션 자체가 비었거나 `github_assets_enabled=false`면 e2e-runner-reporter는 종전대로 이미지를 로컬 경로 텍스트로만 본문에 적습니다.
+- `github_repo`가 비어있으면 (이슈 등록 자체 skip 상태) 본 섹션은 무시됩니다.
+- assets 브랜치는 main 히스토리와 완전히 분리된 orphan 브랜치입니다 — main과 merge하지 마세요. PR 목록·CI에 노출되지 않도록 GitHub Actions trigger·branch protection 대상에서 제외할 것을 권장.
+- 동일 `feat-id`/`run_id`로 재실행 시 같은 경로에 덮어쓰기 (force-push 아닌 일반 push). 과거 run의 이미지는 그대로 보존되어 댓글에서 참조 가능.
+
 ## 2. 테스트 디렉터리 구조 (test-builder가 참조)
 
 ```

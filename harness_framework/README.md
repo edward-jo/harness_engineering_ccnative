@@ -490,11 +490,19 @@ github_issue_labels: e2e-failure,auto-generated,adoption
 github_issue_title_prefix: [E2E][<feat-id>]
 github_dedup_strategy: label+feat-id
 github_max_issues_per_run: 20
+
+# (v2.6+) issue 첨부 이미지 — orphan asset 브랜치에 push 후 raw URL을 본문에 embed
+github_assets_enabled: true
+github_assets_branch: e2e-assets
+github_assets_path_prefix: e2e_runs/
+github_assets_image_extensions: png,jpg,jpeg,webp,gif
+github_assets_max_image_size_mb: 10
+github_assets_max_total_size_mb: 100
 ```
 
 Maestro(모바일)는 `e2e_tool: maestro`, `e2e_spec_dir: .maestro/`, `e2e_spec_naming: <feat-id>.flow.yaml`, `e2e_run_command: maestro test .maestro/`로 바꾸면 됩니다. 다른 도구도 같은 방식 — qa-policy 한 곳만 수정하면 두 에이전트가 그대로 따릅니다.
 
-`github_repo`가 비어있으면 e2e-runner-reporter는 issue 등록을 건너뛰고 로컬 리포트만 남깁니다. `gh auth status`가 실패하면 시작 전에 거절합니다.
+`github_repo`가 비어있으면 e2e-runner-reporter는 issue 등록을 건너뛰고 로컬 리포트만 남깁니다. `gh auth status`가 실패하면 시작 전에 거절합니다. `github_assets_enabled=false`면 이미지를 텍스트 경로로만 본문에 표기합니다 (업로드 안 함).
 
 ### 2단계: adoption 시작 (qa-surveyor)
 
@@ -526,7 +534,9 @@ qa-surveyor가 인터뷰 + 코드 측량으로 `feature_inventory.json`과 `test
 
 실패한 시나리오는 `gh issue create`로 GitHub에 자동 등록됩니다. 동일 feature의 open issue가 이미 존재하면 (`label+feat-id` dedup) 새 issue 대신 **댓글로 재실패 보고**가 추가됩니다. `github_max_issues_per_run`을 넘으면 그 회차의 추가 등록은 skip되고 리포트에 quota_skipped로 카운트됩니다.
 
-실행 리포트는 **루트 하위 `e2e_runs/<run_id>/run_report.json`** 에, 사용자용 markdown 요약은 같은 디렉토리 `run_summary.md`에, trace/screenshot/로그는 `artifacts/`에 저장됩니다. adopt-finish/abandon 시 `e2e_runs/` 디렉토리가 통째로 `archive/adoptions/<slug>/e2e_runs/`로 이동됩니다.
+**Screenshot 첨부 (v2.6+)**: `github_assets_enabled=true`면 e2e-runner-reporter가 같은 repo의 orphan 브랜치 `e2e-assets`에 screenshot을 push하고 `raw.githubusercontent.com` URL을 issue 본문에 markdown image로 삽입합니다 — GitHub 웹 페이지에서 클릭/미리보기 가능. trace.zip·video 등 비이미지는 로컬 경로 텍스트로만 표기됩니다 (자산 브랜치 비대화 방지). asset 브랜치는 main과 격리된 orphan이므로 PR/CI 워크플로에 영향 없습니다. 자산 브랜치를 GitHub Actions·branch protection 대상에서 제외할 것을 권장합니다.
+
+실행 리포트는 **루트 하위 `e2e_runs/<run_id>/run_report.json`** 에, 사용자용 markdown 요약은 같은 디렉토리 `run_summary.md`에, trace/screenshot/로그는 `artifacts/`에 저장됩니다. adopt-finish/abandon 시 `e2e_runs/` 디렉토리가 통째로 `archive/adoptions/<slug>/e2e_runs/`로 이동됩니다. (참고: e2e-assets 브랜치는 archive로 이동하지 않고 그대로 유지됩니다 — issue 본문의 raw URL이 유효하게 유지되도록.)
 
 ### 5단계: 묶음 실행 (선택)
 

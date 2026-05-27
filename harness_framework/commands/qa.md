@@ -260,6 +260,7 @@ e2e-author가 생성한 spec을 qa-policy의 `e2e_run_command`로 실행하고, 
 - 사용자 요약: 같은 디렉토리 `run_summary.md`
 - 실행 로그·trace·screenshot: 같은 디렉토리 `artifacts/`
 - GitHub issue: 신규 생성 또는 기존 open issue에 댓글 (dedup 전략은 qa-policy `github_dedup_strategy`)
+- **첨부 이미지 (v2.6+)**: qa-policy의 **Issue 첨부 이미지 업로드 정책** 섹션에 따라 screenshot(.png/.jpg 등)을 orphan asset 브랜치(기본 `e2e-assets`)에 commit·push한 뒤 `raw.githubusercontent.com` URL을 issue 본문에 markdown image로 삽입. trace.zip·video 등 비이미지는 업로드하지 않고 로컬 경로 텍스트로만 표기.
 
 ### Dedup 규칙
 

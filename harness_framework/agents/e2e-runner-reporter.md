@@ -50,6 +50,16 @@ GH_TITLE_PREFIX   = github_issue_title_prefix (기본: [E2E][<feat-id>])
 GH_ASSIGNEES      = github_issue_assignees    (선택)
 GH_DEDUP          = github_dedup_strategy     (기본: label+feat-id)
 GH_MAX_ISSUES     = github_max_issues_per_run (기본: 20)
+
+# 이미지 업로드 (Issue 첨부 이미지 업로드 정책 섹션)
+ASSETS_ENABLED    = github_assets_enabled              (기본: GH_REPO 있으면 true)
+ASSETS_BRANCH     = github_assets_branch               (기본: e2e-assets)
+ASSETS_PREFIX     = github_assets_path_prefix          (기본: e2e_runs/)
+ASSETS_EXTS       = github_assets_image_extensions     (기본: png,jpg,jpeg,webp,gif)
+ASSETS_MAX_IMG_MB = github_assets_max_image_size_mb    (기본: 10)
+ASSETS_MAX_TOTAL_MB = github_assets_max_total_size_mb  (기본: 100)
+ASSETS_USER_NAME  = github_assets_commit_user_name     (선택)
+ASSETS_USER_EMAIL = github_assets_commit_user_email    (선택)
 ```
 
 ## 인자 모드
@@ -142,15 +152,94 @@ done
   "issues_created": 1,
   "issues_commented": 1,
   "issues_skipped_dedup": 0,
-  "issues_skipped_quota": 0
+  "issues_skipped_quota": 0,
+  "assets": {
+    "enabled": true,
+    "branch": "e2e-assets",
+    "images_uploaded": 4,
+    "images_skipped_size": 1,
+    "images_skipped_budget": 0,
+    "total_bytes": 5242880,
+    "upload_failed": false,
+    "failure_reason": null
+  }
 }
 ```
 
-요약은 `run_summary.md`에도 markdown으로 작성 (사용자가 빠르게 훑기 위함).
+`assets.enabled=false`거나 업로드한 이미지가 0이면 본 객체에 `images_uploaded: 0`만 기록. `upload_failed=true`면 issue 본문은 자동으로 텍스트 fallback (이미지 URL 없이)으로 작성된 상태.
+
+요약은 `run_summary.md`에도 markdown으로 작성 (사용자가 빠르게 훑기 위함). 업로드된 이미지 수도 한 줄로 표기.
 
 ### 단계 4: GitHub Issue 등록
 
-`GH_REPO`가 비어있으면 이 단계 건너뜀.
+`GH_REPO`가 비어있으면 이 단계 전체를 건너뜀.
+
+#### 4-0. 이미지 자산 일괄 업로드 (orphan asset 브랜치)
+
+`ASSETS_ENABLED=false`거나 FAIL 항목 0개면 이 단계 skip. 그 외에는 issue 본문 작성 전 **이번 run의 모든 FAIL feature의 이미지를 한 번에 push**한다 (per-feature push는 race condition·rate-limit 위험).
+
+```bash
+# 1. asset 브랜치 존재 확인 (없으면 orphan 생성)
+WORKTREE=".harness_e2e_assets_worktree"
+if git ls-remote --heads origin "$ASSETS_BRANCH" | grep -q "$ASSETS_BRANCH"; then
+  git fetch origin "$ASSETS_BRANCH":"refs/remotes/origin/$ASSETS_BRANCH"
+  git worktree add "$WORKTREE" "origin/$ASSETS_BRANCH"
+  ( cd "$WORKTREE" && git checkout -B "$ASSETS_BRANCH" "origin/$ASSETS_BRANCH" )
+else
+  git worktree add --detach "$WORKTREE"
+  ( cd "$WORKTREE" \
+    && git checkout --orphan "$ASSETS_BRANCH" \
+    && git rm -rf . 2>/dev/null || true \
+    && printf "# e2e-assets\n\ne2e-runner-reporter가 GitHub issue에 첨부할 이미지를 보관하는 orphan 브랜치입니다.\nmain과 merge하지 마세요.\n" > README.md \
+    && git add README.md && git commit -m "init e2e-assets" \
+    && git push -u origin "$ASSETS_BRANCH" )
+fi
+
+# 2. 이미지 복사 (확장자·크기 필터)
+total_bytes=0
+declare -A ASSET_URLS   # feat_id → "<url1>\n<url2>"
+for failure in $FAILURES; do
+  feat_id=...; run_id=$RUN_RUN_ID
+  dest="$WORKTREE/${ASSETS_PREFIX}${SLUG}/${run_id}/${feat_id}"
+  mkdir -p "$dest"
+  for src in $(find "e2e_runs/$RUN_RUN_ID/artifacts" -type f -iregex ".*\\.(${ASSETS_EXTS//,/|})$" -path "*${feat_id}*"); do
+    bytes=$(stat -f%z "$src" 2>/dev/null || stat -c%s "$src")
+    mb=$(( bytes / 1024 / 1024 ))
+    if [ "$mb" -gt "$ASSETS_MAX_IMG_MB" ]; then
+      echo "skip (image too large: ${mb}MB > ${ASSETS_MAX_IMG_MB}MB): $src" ; continue
+    fi
+    if [ $(( (total_bytes + bytes) / 1024 / 1024 )) -gt "$ASSETS_MAX_TOTAL_MB" ]; then
+      echo "skip (total budget exceeded): $src" ; continue
+    fi
+    cp "$src" "$dest/"
+    total_bytes=$(( total_bytes + bytes ))
+    rel="${ASSETS_PREFIX}${SLUG}/${run_id}/${feat_id}/$(basename "$src")"
+    url="https://raw.githubusercontent.com/${GH_REPO}/${ASSETS_BRANCH}/${rel}"
+    ASSET_URLS["$feat_id"]+="$url"$'\n'
+  done
+done
+
+# 3. 한 번에 commit + push
+( cd "$WORKTREE" \
+  && [ -n "$ASSETS_USER_NAME" ] && git config user.name "$ASSETS_USER_NAME" \
+  && [ -n "$ASSETS_USER_EMAIL" ] && git config user.email "$ASSETS_USER_EMAIL"
+  git add . \
+  && git diff --cached --quiet && echo "no images to upload" || \
+     ( git commit -m "e2e assets: ${SLUG} run ${RUN_RUN_ID}" \
+       && git pull --rebase origin "$ASSETS_BRANCH" \
+       && git push origin "$ASSETS_BRANCH" ) )
+
+# 4. worktree 정리 (실패 결과 상관없이)
+git worktree remove --force "$WORKTREE" 2>/dev/null || rm -rf "$WORKTREE"
+```
+
+**중요 규칙**:
+- worktree는 **항상 `.harness_e2e_assets_worktree`** (gitignore 권장)를 사용해 사용자 working tree와 분리. 절대 사용자 work in progress와 같은 디렉토리에서 작업하지 않는다.
+- push 실패 시 (네트워크·권한·conflict 등) `run_report.json.asset_upload_failed=true`, FAIL 처리하지 않고 다음 단계는 **이미지 URL 없이** 진행 (로컬 경로 텍스트로 fallback). 사용자에게 콘솔 경고 1줄.
+- asset push 권한이 부족하면 (read-only token 등) 사용자에게 한 번만 경고하고 이번 run 내 후속 이미지 시도는 모두 skip.
+- 비이미지(`trace.zip`, `.mp4`, `.webm`, `.json`)는 **업로드 대상이 아니다** — issue 본문에 로컬 경로 텍스트로만 남긴다.
+
+산출된 `ASSET_URLS[feat_id]` 맵을 4-2/4-3 본문 생성 단계에서 사용한다.
 
 각 FAIL 항목에 대해:
 
@@ -188,10 +277,22 @@ gh issue comment <number> --repo "$GH_REPO" --body-file comment_body.md
   ```
   <failure.message>
   ```
-- 산출물: <artifact paths (relative)>
+
+### 스크린샷
+
+<!-- ASSET_URLS[feat_id]의 각 이미지 URL마다 1줄: -->
+![<basename>](<https://raw.githubusercontent.com/.../e2e-assets/...>)
+
+### 비이미지 산출물 (로컬 — 업로드 안 됨)
+
+- `e2e_runs/<RUN_RUN_ID>/artifacts/<feat-id>-trace.zip`
+- `e2e_runs/<RUN_RUN_ID>/artifacts/<feat-id>.webm`
 
 자동 생성: e2e-runner-reporter
 ```
+
+- 이미지 URL이 0개(업로드 비활성·실패·해당 feature에 이미지 없음)면 "### 스크린샷" 섹션을 통째로 생략하고 비이미지 산출물만 표기.
+- 비이미지 산출물이 0개면 그 섹션도 생략.
 
 #### 4-3. 신규 issue 생성
 
@@ -228,10 +329,17 @@ issue 본문 (`issue_body.md`):
 <failure.stack (앞 30줄만, 잘랐으면 [... truncated] 표시)>
 ```
 
-### 산출물
+### 스크린샷
 
-- <artifact 1>
-- <artifact 2>
+<!-- ASSET_URLS[feat_id]의 각 이미지 URL마다 1줄: -->
+![<basename>](<https://raw.githubusercontent.com/.../e2e-assets/...>)
+
+### 비이미지 산출물 (로컬 — 업로드 안 됨)
+
+- `e2e_runs/<RUN_RUN_ID>/artifacts/<feat-id>-trace.zip`
+- `e2e_runs/<RUN_RUN_ID>/artifacts/<feat-id>.webm`
+
+> adopt-finish 후에는 위 경로가 `archive/adoptions/<slug>/e2e_runs/...`로 이동되어 있습니다.
 
 ## 재현 방법
 
@@ -267,6 +375,9 @@ e2e-runner-reporter 완료 (run: 2026-05-26T123456)
   - 댓글: 1건 (https://github.com/.../issues/17)
   - dedup 스킵: 0건
   - quota 스킵: 0건
+- 이미지 첨부 (e2e-assets 브랜치):
+  - 업로드: 4건 / 크기 초과 스킵: 1건 / 예산 초과 스킵: 0건
+  - (또는 비활성/실패 시 사유 한 줄)
 - 리포트: e2e_runs/2026-05-26T123456/run_report.json (루트, adopt-finish 시 archive로 이동)
 - 요약: e2e_runs/2026-05-26T123456/run_summary.md
 
@@ -289,6 +400,8 @@ e2e-runner-reporter 완료 (run: 2026-05-26T123456)
 - 실행 로그·stack trace에 비밀(token, key, PAN)이 노출됐는지 `grep -E '(token|secret|key|password|PAN)' run_stderr.log` 빠르게 점검. 발견 시 issue 본문에 마스킹 처리 후 사용자에게 별도 경고.
 - `gh` 호출 시 `--body-file` 사용 (인라인 `--body`는 셸 escaping 위험).
 - GH issue 본문에 운영 데이터가 섞이지 않도록 trace는 최대 30줄로 자른다.
+- **이미지 업로드 시 PII 화면 주의**: e2e-assets 브랜치는 public repo면 공개. screenshot에 실제 사용자 데이터·이메일·결제 정보가 보이면 안 됨 — qa-policy 5번의 테스트용 더미 데이터만 사용 중인지 확인 (qa-surveyor가 정책으로 박아둠). private repo여도 collaborator 모두에게 노출됨에 유의.
+- asset 브랜치는 main과 격리된 orphan 브랜치이므로 main 히스토리에 영향이 없으나, 누적되면 repo 크기를 키울 수 있다. `github_assets_max_total_size_mb`로 run별 상한을 두고, 주기적으로 오래된 run 디렉토리를 prune할 수 있다 (별도 도구 — 본 에이전트는 prune 하지 않음).
 
 ## 위임 시점
 
