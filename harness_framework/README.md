@@ -453,6 +453,83 @@ claude
 
 ---
 
+## Skills
+
+플러그인이 제공하는 Claude Code skill 목록. 슬래시 커맨드와 달리 skill은 Claude가 컨텍스트를 보고 자율적으로 호출하거나, 사용자가 자연어로 트리거한다.
+
+### `file-issue` — 결함을 GitHub issue로 등록
+
+test-builder가 FAIL로 기록한 failures, 또는 main agent가 직접 검증하다 발견한 결함을 GitHub issue로 등록한다. `gh` CLI 기반, open issue 검색으로 중복 등록을 차단한다.
+
+**호출 시점**
+- 자동 루프가 `MAX_LOOPS`에 도달해 FAIL로 종료된 직후 (`sprint_result.json.status == "FAIL"` 잔존)
+- `/qa test <diff_ref>` 결과가 FAIL인 PR
+- main agent가 dev 서버를 띄워 직접 확인하다 회귀를 발견했을 때
+- 사용자가 "이 문제 issue로 등록해줘"라고 명시 요청
+
+**입력 모드**
+- **Mode A (결과 파일)**: 인자 없이 호출 → `sprint_result.json` 또는 가장 최근 `pr_test_result_*.json`을 자동 탐지하고 `failures` 배열의 각 항목을 issue 1건씩 등록. `--from <path>`로 source 명시 가능.
+- **Mode B (ad-hoc)**: `--title "..." --body "..."` 또는 자유 텍스트로 1건 등록.
+
+**스크린샷 첨부**
+- `--image <path>::<caption>` 인자로 이미지+캡션을 한 쌍으로 전달 (반복 호출 가능). 본문의 `{{image:N}}` placeholder가 N번째 이미지로 치환되어 본문 안 의미 있는 위치에 인라인 임베드된다 — 단순 첨부가 아니라 본문 이해를 돕는 시각 자료로 배치된다.
+- 이미지는 같은 리포의 orphan branch `harness-assets` (경로: `.harness-issues/<dedup-key>/<basename>`)에 별도 worktree로 push된 뒤 `raw.githubusercontent.com` URL로 본문에 참조된다. 현재 작업 브랜치는 영향받지 않는다.
+- placeholder가 부족한 잔여 이미지는 본문 끝 "## 시각 자료" fallback 섹션에 캡션과 함께 추가된다.
+
+**중복 등록 방지**
+- 본문 끝 HTML 주석 `<!-- harness:file-issue key=<dedup-key> -->`을 dedup 키로 사용. dedup-key는 sprint 결과면 `<slug>/sprint-<N>/<failure_id>`, PR 결과면 `<slug>/pr-<diff_ref>/<failure_id>`, ad-hoc이면 `<slug>/manual/<title-slug>`.
+- `gh issue list --state open --search`로 같은 dedup-key의 open issue가 있으면 skip. closed issue는 검사하지 않는다 (재발생을 위한 새 issue로 간주).
+
+**라벨**
+- 항상 `harness` + Mode A는 `test-failure`, Mode B는 `manual-finding`. 사용자가 `--label <name>`을 추가 지정 가능. 라벨이 repo에 없으면 자동 생성 시도 (권한 부족 시 라벨 없이 진행).
+
+**호출 흐름**
+- 기본: 미리보기(제목·라벨·본문 앞 200자·첨부 이미지 개수·raw URL)를 출력하고 사용자에게 "이대로 N건 등록할까?" 일괄 확인 후 등록.
+- `--auto`: 미리보기 생략. 단 `--image`가 1개 이상이면 raw URL 후보는 한 줄 보여주고 진행 (orphan branch에 영구 push되는 부수효과 때문).
+- `--dry-run`: 등록도 push도 하지 않고 출력만.
+
+**호출 방법**
+
+skill은 슬래시 커맨드가 아니라 자연어로 트리거된다. 다음 중 하나로 호출:
+
+- 사용자가 자연어로 요청: "file-issue로 실패 항목 등록해줘", "지금 발견한 버그를 issue로 올려줘 (스크린샷: …)"
+- `/sprint loop`가 FAIL로 종료된 상황에서 main agent가 사용자에게 "file-issue skill로 failures를 등록할까요?"라고 제안 후 진행
+
+**사용 예 (Claude에게 전달할 인자 형태)**
+
+```text
+# Mode A — sprint loop FAIL 직후, source 자동 탐지
+(추가 인자 없음)
+
+# Mode A — 특정 PR 결과 파일 지정
+--from pr_test_result_abc1234.json
+
+# Mode B — 수동 발견한 회귀를 스크린샷과 함께 등록
+--title "로그인 후 메인 화면이 빈 페이지로 렌더됨"
+--body  "## 증상
+사용자가 로그인 직후 비어있는 메인 화면을 본다.
+
+{{image:1}}
+
+네트워크 탭에서 /api/me가 401을 반환한다.
+
+{{image:2}}
+
+## 기대 동작
+로그인 직후 대시보드가 렌더되어야 한다."
+--image .qa/screens/blank-main.png::"로그인 직후 빈 메인 화면"
+--image .qa/screens/api-me-401.png::"/api/me가 401을 반환하는 네트워크 탭"
+```
+
+**전제**
+- `gh` CLI 설치 및 인증 (`gh auth status`)
+- 현재 디렉토리가 GitHub remote가 연결된 repo
+- 이미지 첨부 시 `harness-assets` 브랜치에 push 권한 (push 거부되면 사용자에게 이미지 없이 진행할지/중단할지 묻는다)
+
+> orphan branch `harness-assets`는 영구 보관된다 — issue 본문의 raw URL이 그 브랜치를 참조하므로 force-push·삭제하지 않는다.
+
+---
+
 ## 상태 파일 요약
 
 | 파일 | 작성자 | 읽는 주체 | 수명 |

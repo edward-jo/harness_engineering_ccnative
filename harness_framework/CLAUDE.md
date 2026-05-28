@@ -12,6 +12,7 @@ Claude Code **plugin**으로 배포되는 하네스 엔지니어링 framework. P
 .claude-plugin/plugin.json   — 플러그인 매니페스트
 agents/*.md                  — 서브에이전트 6종
 commands/*.md                — 슬래시 커맨드 3종
+skills/<name>/SKILL.md       — Claude Code skill (현재: file-issue)
 hooks/hooks.json             — Stop / PostToolUse 등록
 hooks/scripts/*.sh           — 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 로 시작)
 templates/stack.md           — /harness init이 사용자 .claude/로 복사

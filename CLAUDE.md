@@ -30,6 +30,7 @@ harness_framework/                     ← 플러그인 소스 (= source 경로)
   .claude-plugin/plugin.json           ← 플러그인 매니페스트
   agents/*.md                          ← 서브에이전트 6종
   commands/*.md                        ← 슬래시 커맨드 3종 (/harness, /sprint, /qa)
+  skills/<name>/SKILL.md               ← Claude Code skill (현재: file-issue)
   hooks/hooks.json                     ← Stop / PostToolUse 등록
   hooks/scripts/*.sh                   ← 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 사용)
   templates/                           ← /harness init이 사용자 .claude/로 복사
@@ -71,6 +72,7 @@ examples/
 - **에이전트**: `harness_framework/agents/*.md` (YAML 프론트매터 + 시스템 프롬프트)
 - **훅**: `harness_framework/hooks/hooks.json` + `harness_framework/hooks/scripts/*.sh` (경로는 `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/...` 절대형식)
 - **슬래시 커맨드**: `harness_framework/commands/*.md`
+- **Skills**: `harness_framework/skills/<name>/SKILL.md` (현재: `file-issue` — test-builder FAIL 또는 main agent의 수동 발견을 GitHub issue로 등록, orphan branch `harness-assets` 기반 스크린샷 인라인 임베드 포함)
 - **MCP 서버**: `harness_framework/.mcp.json`
 
 ### 루프 구현 방식 3가지
