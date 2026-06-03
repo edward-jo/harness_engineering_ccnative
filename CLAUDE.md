@@ -29,7 +29,7 @@ research/
 harness_framework/                     ← 플러그인 소스 (= source 경로)
   .claude-plugin/plugin.json           ← 플러그인 매니페스트
   agents/*.md                          ← 서브에이전트 6종
-  commands/*.md                        ← 슬래시 커맨드 3종 (/harness, /sprint, /qa)
+  commands/*.md                        ← 슬래시 커맨드 4종 (/harness, /sprint, /qa, /qa-dogfood)
   skills/<name>/SKILL.md               ← Claude Code skill (현재: file-issue)
   hooks/hooks.json                     ← Stop / PostToolUse 등록
   hooks/scripts/*.sh                   ← 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 사용)

@@ -11,7 +11,7 @@ Claude Code **plugin**으로 배포되는 하네스 엔지니어링 framework. P
 ```
 .claude-plugin/plugin.json   — 플러그인 매니페스트
 agents/*.md                  — 서브에이전트 6종
-commands/*.md                — 슬래시 커맨드 3종
+commands/*.md                — 슬래시 커맨드 4종 (/harness, /sprint, /qa, /qa-dogfood)
 skills/<name>/SKILL.md       — Claude Code skill (현재: file-issue)
 hooks/hooks.json             — Stop / PostToolUse 등록
 hooks/scripts/*.sh           — 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 로 시작)
@@ -126,6 +126,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor 호출 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드, `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 |
+| `/qa-dogfood [범위]` | Playwright MCP로 앱을 실사용자처럼 전 화면 dogfood 테스트하고 발견 결함을 GitHub issue로 등록 (`harness:file-issue` 스킬 연동, 중복 방지). 인자로 특정 화면/경로만 지정 가능 |
 
 ## 개발 서버
 

@@ -1,6 +1,6 @@
 # Claude Code 하네스 (plugin)
 
-Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework. Claude Code **plugin**으로 배포되며, 슬래시 커맨드(`/harness`, `/sprint`, `/qa`) + 서브에이전트(planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor) + 훅(Stop, PostToolUse)을 한 번에 묶어 Planner → Generator → QA 루프를 동작시킵니다.
+Claude Code 네이티브 방식으로 구현한 **하네스(Harness) 엔지니어링** framework. Claude Code **plugin**으로 배포되며, 슬래시 커맨드(`/harness`, `/sprint`, `/qa`, `/qa-dogfood`) + 서브에이전트(planner, generator, test-builder, risk-reviewer, production-guard, qa-surveyor) + 훅(Stop, PostToolUse)을 한 번에 묶어 Planner → Generator → QA 루프를 동작시킵니다.
 
 하나의 리포에서 **여러 독립 아이디어(project)**를 순차적으로 진행할 수 있으며, 각 project는 자체 Sprint 번호 공간을 갖고 `archive/sprints/<slug>/`에 영구 보관됩니다.
 
@@ -221,7 +221,8 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 ├── commands/
 │   ├── harness.md                 # /harness (init/new/extend/finish/list/abandon/adopt/...)
 │   ├── sprint.md                  # /sprint (숫자/review/loop/close/status)
-│   └── qa.md                      # /qa (PR/diff 단위 test/review/guard/all + adoption loop)
+│   ├── qa.md                      # /qa (PR/diff 단위 test/review/guard/all + adoption loop)
+│   └── qa-dogfood.md              # /qa-dogfood (Playwright로 전 화면 dogfood → GitHub issue 등록)
 ├── hooks/
 │   ├── hooks.json                 # Stop / PostToolUse 등록 (절대 경로: ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/...)
 │   └── scripts/
