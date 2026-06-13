@@ -4,6 +4,7 @@ description: >
   사용자의 짧은 아이디어(1~4문장)를 완전한 제품 스펙으로 확장할 때 사용.
   feature_list.json과 sprint_plan.md를 생성하거나, 기존 project에 새 스프린트를 추가한다.
 model: opus
+effort: xhigh
 tools: Read, Write, Bash
 color: blue
 ---
