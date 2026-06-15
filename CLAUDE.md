@@ -35,7 +35,7 @@ harness_framework/                     ← 플러그인 소스 (= source 경로)
   hooks/scripts/*.sh                   ← 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 사용)
   templates/                           ← /harness init이 사용자 .claude/로 복사
     stack.md, qa-policy.md
-  .mcp.json                            ← Playwright MCP 서버
+  .mcp.json                            ← Playwright MCP 서버 (Maestro는 선택적·사용자 등록)
 
 examples/
   todo-manager/                        ← 이 framework로 완성한 레퍼런스 project (5스프린트 22 feature)

@@ -56,6 +56,23 @@ app/
 | 백엔드 기동 명령 | `uvicorn backend.main:app --reload --port 8000` |
 | 프론트엔드 기동 명령 | `npm run dev` (Vite가 5173 바인딩) |
 
+## 플랫폼 & E2E 환경
+
+`/qa-dogfood`가 dogfood 자동화 도구(웹=Playwright / 모바일=Maestro)를 고를 때 참조한다.
+순수 웹 프로젝트면 "지원 플랫폼"만 웹으로 두고 모바일 행은 비워 둔다.
+
+| 항목 | 값 |
+|------|-----|
+| 지원 플랫폼 | `웹` (예: `웹`, `iOS`, `Android`, `웹·iOS·Android`) |
+| dogfood 기본 자동화 도구 | `playwright` (웹) — 모바일이면 `maestro` |
+| 앱 ID (모바일) | <Android package 또는 iOS bundle id, 예: `com.example.app`> |
+| 에뮬레이터·시뮬레이터 기동 | <예: `npx react-native run-ios`, `emulator -avd Pixel_7`> |
+| 앱 설치 (모바일) | <예: `adb install app-debug.apk`, EAS 빌드 산출물 경로> |
+| Maestro 플로우 위치 | <있으면 경로, 예: `app/mobile/maestro_flows/`> |
+
+> Maestro MCP는 선택적 등록이다(`claude mcp add maestro -- maestro mcp`). 모바일
+> dogfood에는 Maestro CLI + 부팅된 에뮬레이터/시뮬레이터 + 설치된 앱이 선행돼야 한다.
+
 ## API 검증 도구 (evaluator용)
 
 | 요구 | 도구 |

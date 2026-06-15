@@ -222,7 +222,7 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 │   ├── harness.md                 # /harness (init/new/extend/finish/list/abandon/adopt/...)
 │   ├── sprint.md                  # /sprint (숫자/review/loop/close/status)
 │   ├── qa.md                      # /qa (PR/diff 단위 test/review/guard/all + adoption loop)
-│   └── qa-dogfood.md              # /qa-dogfood (Playwright로 전 화면 dogfood → GitHub issue 등록)
+│   └── qa-dogfood.md              # /qa-dogfood (Playwright(웹)/Maestro(모바일) 선택, 전 화면 dogfood → GitHub issue 등록)
 ├── hooks/
 │   ├── hooks.json                 # Stop / PostToolUse 등록 (절대 경로: ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/...)
 │   └── scripts/
@@ -239,7 +239,7 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 ├── templates/
 │   ├── stack.md                   # 스택 정의 템플릿 (init이 사용자 .claude/로 복사)
 │   └── qa-policy.md               # QA 정책 템플릿 (init이 사용자 .claude/로 복사)
-└── .mcp.json                      # Playwright MCP 서버 설정
+└── .mcp.json                      # Playwright MCP 서버 설정 (Maestro는 선택적·사용자 등록)
 ```
 
 ### 사용자 워크스페이스 (`${CLAUDE_PROJECT_DIR}`, 상태)
@@ -451,6 +451,9 @@ claude
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor가 도메인 인터뷰 + 코드 매핑 + 우선순위 큐 생성 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드 + `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 (timestamp archive) |
+| `/qa-dogfood [--mcp=playwright\|maestro] [범위]` | 앱을 실사용자처럼 전 화면 dogfood 테스트하고 발견 결함을 GitHub issue로 등록 (`file-issue` 연동). 자동화 도구는 웹=Playwright / 모바일=Maestro 중 `--mcp`로 지정하거나 미지정 시 시작할 때 질문. 인자로 특정 화면/경로만 지정 가능 |
+
+> **모바일(Maestro) dogfood 준비**: Maestro MCP는 플러그인 기본 등록이 아니다(웹 사용자 무영향). 모바일 앱을 dogfood하려면 (1) Maestro CLI 설치, (2) `claude mcp add maestro -- maestro mcp`로 MCP 등록, (3) 안드로이드 에뮬레이터/iOS 시뮬레이터 부팅 + 대상 앱(apk/app) 설치 + `appId` 확인이 선행돼야 한다. `.claude/stack.md`의 "플랫폼 & E2E 환경" 표에 appId·기동 명령을 적어 두면 `/qa-dogfood`가 자동으로 읽는다. 단, Maestro에는 라이브 콘솔/네트워크 관찰 MCP 툴이 없어 4xx·5xx·콘솔 에러 점검은 `maestro.log`/리포트로 사후 확인하거나 명시적 제외로 처리된다.
 
 ---
 

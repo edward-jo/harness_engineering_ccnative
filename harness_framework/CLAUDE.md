@@ -17,7 +17,7 @@ hooks/hooks.json             — Stop / PostToolUse 등록
 hooks/scripts/*.sh           — 헬퍼·훅 스크립트 (cd "${CLAUDE_PROJECT_DIR}" 로 시작)
 templates/stack.md           — /harness init이 사용자 .claude/로 복사
 templates/qa-policy.md       — /harness init이 사용자 .claude/로 복사
-.mcp.json                    — Playwright MCP 서버 설정
+.mcp.json                    — Playwright MCP 서버 설정 (Maestro는 선택적·사용자 등록)
 ```
 
 플러그인 캐시 내부 경로 참조 시 `${CLAUDE_PLUGIN_ROOT}` 환경변수 사용. 사용자 워크스페이스 참조 시 `${CLAUDE_PROJECT_DIR}`. 두 변수는 **hook 컨텍스트에서만** Claude Code가 자동 주입한다 — 슬래시 커맨드에서 Bash로 직접 호출되는 스크립트(`harness-init.sh`, `project-abandon.sh`, `adopt-finish.sh`, `adopt-abandon.sh`, `sprint-close.sh`)는 `${CLAUDE_PROJECT_DIR:-$(pwd)}` 형태로 cwd fallback을 두고, `CLAUDE_PLUGIN_ROOT`가 필요하면 `$(dirname "${BASH_SOURCE[0]}")/../..`에서 derive한다. Hook 스크립트(loop-guard, contract-lint, inventory-lint, progress-update, session-end)는 `${CLAUDE_PROJECT_DIR:?}` 그대로 두어도 안전하다.
@@ -126,7 +126,7 @@ Stop 훅 기반 자동 루프. **coordinator 에이전트는 없다.**
 | `/harness adopt [<제목>]` | retrofit 트랙 시작 — qa-surveyor 호출 |
 | `/harness adopt-finish` | retrofit 정상 종료 (큐 모두 done 가드, `--force-incomplete` 옵션) |
 | `/harness adopt-abandon` | retrofit 중단 처리 |
-| `/qa-dogfood [범위]` | Playwright MCP로 앱을 실사용자처럼 전 화면 dogfood 테스트하고 발견 결함을 GitHub issue로 등록 (`harness:file-issue` 스킬 연동, 중복 방지). 인자로 특정 화면/경로만 지정 가능 |
+| `/qa-dogfood [--mcp=playwright\|maestro] [범위]` | 웹(Playwright MCP) 또는 모바일(Maestro MCP)로 앱을 실사용자처럼 전 화면 dogfood 테스트하고 발견 결함을 GitHub issue로 등록 (`harness:file-issue` 스킬 연동, 중복 방지). 자동화 도구는 `--mcp`로 지정하거나 시작 시 선택(미지정 시 질문). Maestro MCP는 선택적 등록(`claude mcp add maestro -- maestro mcp`)이며 에뮬레이터/시뮬레이터·설치된 앱·appId가 선행돼야 함. 인자로 특정 화면/경로만 지정 가능 |
 
 ## 개발 서버
 
