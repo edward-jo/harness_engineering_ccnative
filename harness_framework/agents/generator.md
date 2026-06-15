@@ -4,6 +4,7 @@ description: >
   스프린트 계약에 따라 기능을 구현할 때 사용.
   한 번에 하나의 스프린트를 구현하고, 완료 후 git 커밋한다.
 model: opus
+effort: xhigh
 tools: Read, Write, Edit, Bash, Glob, Grep
 permissionMode: acceptEdits
 color: green
