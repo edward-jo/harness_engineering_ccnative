@@ -11,7 +11,7 @@
 #       사용자가 수정했을 수 있으므로 backup으로 이동 후 삭제
 #   - user custom (.claude/settings.local.json·*.new·*.deprecated·
 #       사용자가 추가한 agents/commands/hooks 등): backup으로 이동 후 삭제
-#   - state (current_project.txt·feature_list.json·claude-progress.txt·sprint_*·
+#   - state (current_project.txt·feature_list.json·sprint_*·
 #       pr_*_result_*·adoption 트랙 파일): backup으로 이동 후 삭제
 #       (--keep-state 시 백업도 삭제도 하지 않음)
 #   - archive/·app/·기타 사용자 코드: 절대 건드리지 않음
@@ -32,8 +32,6 @@ ASSUME_YES=0
 # structural: 100% 소스와 동일하게 유지되는 파일. 백업 없이 삭제.
 STRUCTURAL_FRAMEWORK_FILES=(
   ".claude/hooks/loop-guard.sh"
-  ".claude/hooks/progress-update.sh"
-  ".claude/hooks/session-end.sh"
   ".claude/hooks/sprint-close.sh"
   ".claude/hooks/project-abandon.sh"
   ".claude/hooks/contract-lint.sh"
@@ -66,7 +64,6 @@ CUSTOMIZABLE_FRAMEWORK_FILES=(
 STATE_SCAFFOLD=(
   "current_project.txt"
   "feature_list.json"
-  "claude-progress.txt"
 )
 
 # /harness, /sprint, /qa 사용 중 루트에 만들어지는 런타임 상태 (glob 허용)
@@ -106,7 +103,7 @@ FLAGS:
                        backup 으로 이동 후 삭제
   user custom         (.claude/settings.local.json·*.new·*.deprecated·
                        사용자가 추가한 파일): backup 으로 이동 후 삭제
-  state               (current_project.txt·feature_list.json·claude-progress.txt·sprint_*·
+  state               (current_project.txt·feature_list.json·sprint_*·
                        pr_*_result_*·adoption 트랙 파일): backup 으로 이동 후 삭제
                        (--keep-state 시 보존)
   보존                 (archive/·app/·기타 사용자 코드): 절대 건드리지 않음

@@ -10,7 +10,6 @@ set -euo pipefail
 # CLAUDE_PROJECT_DIR은 hook 컨텍스트에서만 자동 주입. 슬래시 커맨드 호출 시 cwd로 fallback.
 cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
-PROGRESS_FILE="claude-progress.txt"
 FORCE_HIGH_RISK=0
 FORCE_NOGO=0
 
@@ -153,10 +152,5 @@ fi
 CURRENT_COUNT=$(jq 'length' "$INDEX")
 jq --argjson c "$CURRENT_COUNT" '.sprint_count = $c' "$META" > "${META}.tmp"
 mv "${META}.tmp" "$META"
-
-{
-  echo ""
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] sprint close: $SLUG/sprint_$N (passed $PASSED/$TOTAL, risk=${RISK_GRADE:-n/a}, readiness=${RELEASE_READINESS:-n/a}, pr_files=$PR_MOVED)"
-} >> "$PROGRESS_FILE"
 
 echo "[sprint-close] $TARGET/ 생성 완료 ($PASSED/$TOTAL, features: $(jq 'length' "$TARGET/features.json"), risk: ${RISK_GRADE:-n/a}, readiness: ${RELEASE_READINESS:-n/a}, pr_files: $PR_MOVED)"

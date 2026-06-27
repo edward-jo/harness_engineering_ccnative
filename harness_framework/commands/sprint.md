@@ -17,7 +17,7 @@ QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack
   1. generator가 `sprint_plan.md`의 해당 sprint 항목을 보고 `sprint_contract.md`를 작성한다 (`generator.md`의 self-rubric 준수 — 검증 동작·관찰 결과·도구 분류·금지 표현 회피).
   2. 작성 직후 `PostToolUse` 훅(`contract-lint.sh`)이 자동으로 lint를 돌려 모호 표현·검증 동사 부재를 stderr로 경고한다. generator는 경고를 받으면 즉시 보강한다.
   3. generator가 짧게 사용자에게 보고. 사용자가 "진행" 또는 보강 지시를 줄 때까지 코드 작성을 시작하지 않는다.
-  4. 합의 후 generator가 완료 기준 순서대로 구현 → git 커밋 → `claude-progress.txt` 갱신.
+  4. 합의 후 generator가 완료 기준 순서대로 구현 → git 커밋.
 
   > 더 엄격한 사전 점검이 필요하면 `/qa review`로 risk-reviewer를 PR/sprint 단위로 호출하세요.
 
@@ -84,7 +84,7 @@ QA 에이전트(test-builder, risk-reviewer, production-guard)는 `.claude/stack
   - generator와 test-builder는 반드시 **순차적으로** 호출합니다 (병렬 금지).
   - 각 스프린트 시작 전 현재 진행 상황을 사용자에게 출력합니다: `[스프린트 N/전체] 구현 시작...`
   - test-builder 결과를 반드시 확인한 후 다음 스프린트로 넘어갑니다.
-  - generator 호출 시 이전 스프린트의 구현 내용이 컨텍스트로 전달되도록 sprint_contract.md와 claude-progress.txt를 참조하도록 지시합니다.
+  - generator 호출 시 이전 스프린트의 구현 내용이 컨텍스트로 전달되도록 sprint_contract.md를 참조하도록 지시합니다.
   - `loop all`은 자동화 효율을 위해 risk-reviewer / production-guard를 자동 실행하지 않습니다. 종료 후 사용자에게 `/sprint review` 잔여 단계 실행을 안내하세요.
 
 - **close**:

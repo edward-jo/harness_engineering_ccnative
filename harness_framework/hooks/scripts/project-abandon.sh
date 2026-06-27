@@ -7,8 +7,6 @@ set -euo pipefail
 # CLAUDE_PROJECT_DIR은 hook 컨텍스트에서만 자동 주입. 슬래시 커맨드 호출 시 cwd로 fallback.
 cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
-PROGRESS_FILE="claude-progress.txt"
-
 if [ ! -f "current_project.txt" ]; then
   echo "[abandon] current_project.txt가 없습니다." >&2
   exit 1
@@ -70,13 +68,6 @@ fi
 # 4) 루트 상태 리셋.
 : > current_project.txt
 echo "[]" > feature_list.json
-
-# 5) 진행 로그 기록.
-{
-  echo ""
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] project abandoned: $SLUG → $TARGET/"
-  echo "  루트 파일 $MOVED_COUNT 개 이동, current_project.txt 비움"
-} >> "$PROGRESS_FILE"
 
 echo "[abandon] 완료: $TARGET/"
 echo "  이동된 루트 파일: $MOVED_COUNT 개"
