@@ -10,7 +10,6 @@
 #   .claude/rules/README.md                — rules 디렉토리 안내 (선택 기능)
 #   current_project.txt                    — 빈 파일 (active project slug 들어갈 자리)
 #   feature_list.json                      — 빈 배열 [] (planner가 채움)
-#   claude-progress.txt                    — 헤더 주석 (session-end.sh가 추가 기록)
 #
 # 환경 (둘 다 hook 컨텍스트에서만 Claude Code가 자동 주입. 슬래시 커맨드에서 호출될 때는 미설정이므로 fallback 사용):
 #   CLAUDE_PROJECT_DIR — claude 세션의 워크스페이스 루트. 미설정 시 cwd로 fallback.
@@ -72,18 +71,6 @@ if [ ! -e "feature_list.json" ]; then
   CREATED+=("feature_list.json")
 else
   PRESERVED+=("feature_list.json")
-fi
-
-if [ ! -e "claude-progress.txt" ]; then
-  cat > claude-progress.txt <<'EOF'
-# 이 파일은 세션 간 컨텍스트 이월을 위한 진행 상황 로그입니다.
-# session-end.sh 훅이 자동으로 업데이트합니다.
-# generator 에이전트는 새 세션 시작 시 이 파일을 반드시 읽어야 합니다.
-# 200줄 초과 시 archive/progress/claude-progress-YYYY-MM.txt로 rotation됩니다.
-EOF
-  CREATED+=("claude-progress.txt")
-else
-  PRESERVED+=("claude-progress.txt")
 fi
 
 # 출력

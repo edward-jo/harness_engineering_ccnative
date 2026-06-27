@@ -39,7 +39,6 @@ claude 세션 안에서:
 | `.claude/qa-policy.md` | 사용자 프로젝트 | QA 정책 템플릿 — **편집 필요** |
 | `current_project.txt` | 사용자 프로젝트 루트 | 빈 파일 (active project slug) |
 | `feature_list.json` | 사용자 프로젝트 루트 | `[]` (planner가 채움) |
-| `claude-progress.txt` | 사용자 프로젝트 루트 | 세션 로그 헤더 |
 
 `/harness init`을 두 번째 이상 실행해도 사용자가 편집한 `stack.md`·`qa-policy.md`는 그대로 보존됩니다. 안전하게 다시 부를 수 있습니다.
 
@@ -113,7 +112,7 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 | **structural framework** | `.claude/hooks/*.sh`, `manifest.json`, `HARNESS.md`, `.gitignore` | 백업 없이 삭제 (install.sh로 동일 내용 재설치 가능) |
 | **customizable framework** | `.claude/stack.md`, `qa-policy.md`, `settings.json`, `agents/*`, `commands/*`, `.mcp.json` | **백업 후 삭제** (사용자 수정 가능성 있음) |
 | **user custom** | `.claude/settings.local.json`, `*.new`, `*.deprecated`, 사용자가 추가한 agents/commands/hooks 파일 등 | **백업 후 삭제** |
-| **state** | `current_project.txt`, `feature_list.json`, `claude-progress.txt`, `sprint_*`, `pr_*_result_*.json`, adoption 트랙 파일 | **백업 후 삭제** (`--keep-state` 시 보존) |
+| **state** | `current_project.txt`, `feature_list.json`, `sprint_*`, `pr_*_result_*.json`, adoption 트랙 파일 | **백업 후 삭제** (`--keep-state` 시 보존) |
 | **보존 대상** | `archive/`, `app/`, 기타 사용자 코드 | **건드리지 않음** |
 
 ### 플래그
@@ -140,7 +139,6 @@ curl -fsSL https://raw.githubusercontent.com/edward-jo/harness_engineering_ccnat
 ├── .mcp.json
 ├── current_project.txt       # state 파일 (--keep-state 미지정 시)
 ├── feature_list.json
-├── claude-progress.txt
 ├── sprint_plan.md            # 진행 중이던 sprint state (있으면)
 ├── sprint_result.json
 └── pr_*_result_*.json
@@ -228,8 +226,6 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 │   └── scripts/
 │       ├── harness-init.sh        # /harness init 헬퍼 — 사용자 프로젝트 부트스트랩 (절대 덮어쓰지 않음)
 │       ├── loop-guard.sh          # Stop: FAIL 감지 시 루프 재실행
-│       ├── progress-update.sh     # PostToolUse(Bash): git commit 감지 로그
-│       ├── session-end.sh         # Stop: 세션 종료 로그 + rotation
 │       ├── contract-lint.sh       # PostToolUse(Write|Edit): sprint_contract.md lint
 │       ├── inventory-lint.sh      # PostToolUse(Write|Edit): feature_inventory / test_priority_queue lint
 │       ├── adopt-finish.sh        # /harness adopt-finish 헬퍼
@@ -263,7 +259,6 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
 ├── current_adoption.txt           # 현재 active retrofit slug (sprint와 공존 가능)
 ├── feature_inventory.json         # qa-surveyor 코드베이스 매핑 (adoption 트랙)
 ├── test_priority_queue.md         # 회귀 테스트 우선순위 큐 (adoption 트랙)
-├── claude-progress.txt            # 세션 로그 (200줄 초과 시 rotation)
 └── archive/                       # 아카이브 (close/finish 시 생성)
     ├── sprints/<project-slug>/
     │   ├── META.json
@@ -271,13 +266,11 @@ harness_framework/                  # 플러그인 루트 (~/.claude/plugins/cac
     │   ├── sprint_N/{contract.md,result.json,features.json,sprint_review_result.json,sprint_guard_result.json,pr_*}
     │   ├── feature_list.json      # project 종료 시 최종 스냅샷
     │   └── sprint_plan.md
-    ├── adoptions/<adoption-slug>/
-    │   ├── META.json              # status, started/finished, feature_count, tests_added/skipped
-    │   ├── feature_inventory.json
-    │   ├── test_priority_queue.md
-    │   └── pr_*_result_feat-inv-*.json
-    └── progress/
-        └── claude-progress-YYYY-MM.txt
+    └── adoptions/<adoption-slug>/
+        ├── META.json              # status, started/finished, feature_count, tests_added/skipped
+        ├── feature_inventory.json
+        ├── test_priority_queue.md
+        └── pr_*_result_feat-inv-*.json
 ```
 
 ### Invariant (불변조건)
@@ -317,7 +310,7 @@ planner 에이전트로 sprint_plan.md를 다시 읽고 다음 관점으로 보�
 품질 보강이 반복적으로 필요하다면 플러그인을 fork해서 `agents/planner.md` 끝에 **self-check rubric**을 추가하면 매번 자동 검증됩니다. 단, 플러그인 캐시를 직접 편집하면 다음 `/plugin update` 시 유실되므로 fork 후 자체 마켓플레이스로 배포하는 방식이 안전합니다.
 
 ### Generator
-`.claude/stack.md`와 `sprint_contract.md`의 완료 기준을 읽고 기능을 구현합니다. 세션 시작 시 `current_project.txt`·`claude-progress.txt`를 반드시 읽습니다.
+`.claude/stack.md`와 `sprint_contract.md`의 완료 기준을 읽고 기능을 구현합니다. 세션 시작 시 `current_project.txt`를 반드시 읽습니다.
 
 ```yaml
 model: opus
@@ -548,7 +541,6 @@ skill은 슬래시 커맨드가 아니라 자연어로 트리거된다. 다음 �
 | `sprint_review_result.json` | risk-reviewer (Sprint 모드) | sprint-close.sh | sprint review~close |
 | `sprint_guard_result.json` | production-guard (Sprint 모드) | sprint-close.sh | sprint review~close |
 | `pr_*_result_<diff_ref>.json` | QA PR 모드 (`/qa`) | sprint-close.sh | sprint 동안 누적, close 시 archive로 이동 |
-| `claude-progress.txt` | session-end.sh | generator | 지속 (rotation 적용) |
 | `archive/sprints/<slug>/INDEX.json` | sprint-close.sh | `/sprint status` | project 영속 (각 항목에 `risk_grade`·`release_readiness` 포함) |
 | `archive/sprints/<slug>/META.json` | `/harness finish`, sprint-close.sh | `/harness list` | project 영속 |
 
@@ -585,9 +577,9 @@ skill은 슬래시 커맨드가 아니라 자연어로 트리거된다. 다음 �
 
 에이전트 프롬프트는 건드릴 필요 없습니다 — generator/QA가 세션마다 `.claude/stack.md`를 읽어 자동 추종합니다.
 
-### 루프 횟수·rotation 임계·모델 등 플러그인 내부값
+### 루프 횟수·모델 등 플러그인 내부값
 
-이들은 플러그인 캐시 파일(`hooks/scripts/loop-guard.sh`의 `MAX_LOOPS`, `session-end.sh`의 `MAX_LINES`, `agents/*.md`의 `model` 프론트매터)에 박혀 있습니다. 변경하려면:
+이들은 플러그인 캐시 파일(`hooks/scripts/loop-guard.sh`의 `MAX_LOOPS`, `agents/*.md`의 `model` 프론트매터)에 박혀 있습니다. 변경하려면:
 
 1. 이 리포를 fork
 2. 해당 값을 수정하고 `.claude-plugin/plugin.json`의 `version` bump

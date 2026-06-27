@@ -9,8 +9,6 @@ set -euo pipefail
 # CLAUDE_PROJECT_DIR은 hook 컨텍스트에서만 자동 주입. 슬래시 커맨드 호출 시 cwd로 fallback.
 cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
-PROGRESS_FILE="claude-progress.txt"
-
 if [ ! -f "current_adoption.txt" ]; then
   echo "[adopt-abandon] current_adoption.txt가 없습니다." >&2
   exit 1
@@ -64,10 +62,5 @@ else
 fi
 
 : > current_adoption.txt
-
-{
-  echo ""
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt abandon: $SLUG → $DEST (pr_files=$PR_MOVED)"
-} >> "$PROGRESS_FILE"
 
 echo "[adopt-abandon] $DEST/ 로 이동 완료 (pr_files=$PR_MOVED). 같은 base slug 재사용 가능."

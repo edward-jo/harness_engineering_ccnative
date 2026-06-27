@@ -275,8 +275,7 @@ private repo면 raw.githubusercontent.com URL은 토큰 없이 열리지 않는�
 
 - 본문에 코드 스니펫·로그는 fenced code block으로 감싸 raw 텍스트를 보존한다.
 - 한 sprint 결과에서 failures가 5건을 넘으면 미리보기에서 "5건 표시 + N건 더 있음"으로 잘라 출력하되 등록은 전체를 수행한다.
-- 등록·push 후 `sprint_result.json`, `pr_test_result_*.json` 등 source 파일은 **수정하지 않는다**.
-- 등록된 issue 번호를 `claude-progress.txt`에 한 줄로 적는 정도는 허용 (예: `file-issue: #42, #43 등록 (sprint 3 failures, 2 images)`). 그 외 상태 파일은 건드리지 않는다.
+- 등록·push 후 `sprint_result.json`, `pr_test_result_*.json` 등 source 파일을 비롯한 어떤 상태 파일도 **수정하지 않는다**.
 - gh CLI는 현재 cwd의 git remote로 repo를 자동 식별한다. monorepo·서브디렉토리 호출 시 사전 점검의 `gh repo view` 출력을 한 줄 보여준 뒤 진행한다.
 - **orphan branch `harness-assets`는 영구 보관**된다 — 한 번 push하면 raw URL이 issue 본문에 박혀 있으므로 임의로 force-push·삭제하지 않는다. 같은 dedup-key 폴더에 이미지를 덮어쓰면 기존 issue의 raw URL 내용이 바뀐다는 점에 주의.
 - worktree 작업 중 push가 실패해도 **반드시 worktree를 cleanup**한다. cleanup 누락 시 다음 호출에서 `git worktree add`가 충돌한다.

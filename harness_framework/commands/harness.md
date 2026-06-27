@@ -19,7 +19,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/harness-init.sh"
 수행:
 - `.claude/stack.md` 템플릿 배치 (없을 때만) — 사용자가 자기 스택으로 편집해야 함
 - `.claude/qa-policy.md` 템플릿 배치 (없을 때만) — 사용자가 도메인 정보를 채워야 함
-- 상태 스캐폴드 생성 (없을 때만): `current_project.txt`, `feature_list.json`, `claude-progress.txt`
+- 상태 스캐폴드 생성 (없을 때만): `current_project.txt`, `feature_list.json`
 
 스크립트는 생성·보존 항목을 stdout으로 보고합니다. 결과를 사용자에게 그대로 보여준 뒤, `.claude/stack.md`와 `.claude/qa-policy.md`를 프로젝트에 맞게 편집하도록 안내하세요.
 
@@ -65,7 +65,6 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/harness-init.sh"
    - 파일이 없으면 새로 작성 (slug, title은 `sprint_plan.md`의 제품 개요에서 추론).
 6. `current_project.txt` 비우기: `: > current_project.txt`
 7. 루트 `feature_list.json`을 빈 배열 `[]`로 리셋 (새 project를 위해).
-8. `claude-progress.txt`에 `[시각] project 종료: $SLUG` 한 줄 append.
 
 ## 모드 4: `abandon` — 현재 project 실패·중단 처리
 
@@ -85,7 +84,6 @@ bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/project-abandon.sh"
 3. 루트 `feature_list.json`·`sprint_plan.md`·`sprint_contract.md`·`sprint_result.json` 중 존재하는 것을 이동.
 4. 이동 경로의 `META.json`에 `status: "abandoned"`, `abandoned: <date>` 설정.
 5. 루트 `current_project.txt` 비우고, `feature_list.json` 빈 배열로 리셋.
-6. `claude-progress.txt`에 abandon 이벤트 기록.
 
 완료 후 같은 slug로 새 project 시작 가능: `/harness <원래 slug 재사용 가능>`.
 

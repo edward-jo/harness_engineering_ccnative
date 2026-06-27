@@ -63,7 +63,6 @@ examples/
 |------|------|
 | `feature_list.json` | 200+ 기능 목록 + `completed` 여부 |
 | `sprint_contract.md` | Generator ↔ QA 에이전트 간 완료 기준 합의 |
-| `claude-progress.txt` | 세션 간 진행 상황 이월 |
 | `sprint_result.json` | test-builder(Sprint 모드)가 기록하는 PASS/FAIL 결과 (루트, hot path) |
 | `sprint_review_result.json` / `sprint_guard_result.json` | risk-reviewer / production-guard Sprint 모드 결과 (루트) |
 | `pr_*_result_<diff_ref>.json` | `/qa` PR 모드 산출물 (루트, close 시 archive 동반) |

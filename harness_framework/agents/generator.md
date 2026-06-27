@@ -26,15 +26,13 @@ color: green
 4. **`sprint_contract.md` 처리** — 다음 분기로 동작한다:
    - 파일이 **없으면** (또는 다른 sprint의 잔여물이면): `sprint_plan.md`에서 현재 sprint 항목을 추출해 **검증 가능한 완료 기준 목록을 작성**한다 (아래 "sprint_contract.md 작성 규칙" 준수). 작성 후 사용자에게 짧게 보고하고, 사용자가 명시적으로 "진행" 또는 보강 지시를 줄 때까지 코드 작성을 시작하지 않는다.
    - 파일이 **있고 현재 sprint와 일치하면**: 그대로 읽어 완료 기준을 따른다 (이미 합의된 상태).
-5. `claude-progress.txt` 읽기 (이전 세션 컨텍스트).
-6. `feature_list.json`에서 현재 스프린트 미완료 기능 파악.
+5. `feature_list.json`에서 현재 스프린트 미완료 기능 파악.
    - `feature_list.json`은 현재 active project의 open/현재 sprint 항목만 담는다.
    - 과거 완료 스프린트의 기능은 `archive/sprints/<slug>/sprint_N/features.json`에 있으며 생성기는 읽지 않는다.
-7. `stack.md`의 시작 스크립트로 개발 서버 기동.
-8. 기능을 완료 기준 순서대로 구현. **3단계에서 로드한 rule들을 매 코드 작성·수정 시점에 자체 점검**한다.
-9. 각 기능 완료 후 `feature_list.json`의 `completed: true` 업데이트.
-10. 의미 있는 단위로 git 커밋 (`stack.md`의 커밋 메시지 관례를 따른다).
-11. `claude-progress.txt` 업데이트.
+6. `stack.md`의 시작 스크립트로 개발 서버 기동.
+7. 기능을 완료 기준 순서대로 구현. **3단계에서 로드한 rule들을 매 코드 작성·수정 시점에 자체 점검**한다.
+8. 각 기능 완료 후 `feature_list.json`의 `completed: true` 업데이트.
+9. 의미 있는 단위로 git 커밋 (`stack.md`의 커밋 메시지 관례를 따른다).
 
 ## sprint_contract.md 작성 규칙 (self-rubric)
 

@@ -12,7 +12,6 @@ set -euo pipefail
 # CLAUDE_PROJECT_DIR은 hook 컨텍스트에서만 자동 주입. 슬래시 커맨드 호출 시 cwd로 fallback.
 cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
-PROGRESS_FILE="claude-progress.txt"
 FORCE_INCOMPLETE=0
 
 for arg in "$@"; do
@@ -154,10 +153,5 @@ mv "${META}.tmp" "$META"
 
 # current_adoption.txt 비우기
 : > current_adoption.txt
-
-{
-  echo ""
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] adopt finish: $SLUG (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED)"
-} >> "$PROGRESS_FILE"
 
 echo "[adopt-finish] $TARGET/ 정리 완료 (features=$FEATURE_COUNT, tests_added=$TESTS_DONE, tests_skipped=$TESTS_SKIPPED, pr_files=$PR_MOVED)"
